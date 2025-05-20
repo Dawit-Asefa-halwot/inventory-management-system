@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Bell, Search, User, Settings, X, Sun, Moon } from 'lucide-react';
-import { useTheme } from '../../theme/ThemeProvider';
+import { useTheme } from '../ThemeProvider';
 
 const Header = ({ userName = 'User', userAvatar = null }) => {
      const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -40,14 +41,28 @@ const Header = ({ userName = 'User', userAvatar = null }) => {
           );
      };
 
+
+     useEffect(() => {
+          const storedTheme = localStorage.getItem('theme');
+          if (storedTheme === 'dark') {
+               document.documentElement.classList.add('dark');
+          } else {
+               document.documentElement.classList.remove('dark');
+          }
+     }, []);
+
      return (
           <header className="bg-white border-b border-gray-200 dark:border-gray-700 h-16">
                <div className="h-full px-4 flex items-center justify-between">
                     {/* Search Bar */}
+
+
                     <div className="relative max-w-xs w-full hidden sm:block">
                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                               {/* <Search size={18} className="text-gray-400 dark:text-gray-500" /> */}
                          </div>
+
+
                          {/* <input
                               type="text"
                               placeholder="Search..."

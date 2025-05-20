@@ -1,5 +1,5 @@
 import React from 'react';
-import QRScanner from '../../scanner/QRScanner';
+import QRScanner from '../scanner/QRScanner';
 
 const QRScannerModal = ({ isOpen, onClose, onScan }) => {
      if (!isOpen) return null;
