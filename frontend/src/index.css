@@ -1,3 +1,99 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+     :root {
+          --background: #ffffff;
+          --background-secondary: #f9fafb;
+          --text: #111827;
+          --text-secondary: #4b5563;
+     }
+
+     .dark {
+          --background: #111827;
+          --background-secondary: #1f2937;
+          --text: #f9fafb;
+          --text-secondary: #d1d5db;
+     }
+
+     body {
+          @apply bg-[var(--background)] text-[var(--text)];
+     }
+}
+
+/* Global dark mode styles */
+.dark {
+     color-scheme: dark;
+}
+
+/* Background colors */
+.dark .bg-white {
+     background-color: #1f2937;
+     /* gray-800 */
+}
+
+.dark .bg-gray-50 {
+     background-color: #1f2937;
+     /* gray-800 */
+}
+
+.dark .bg-gray-100 {
+     background-color: #374151;
+     /* gray-700 */
+}
+
+/* Text colors */
+.dark .text-gray-900 {
+     color: #f3f4f6;
+     /* gray-100 */
+}
+
+.dark .text-gray-800 {
+     color: #e5e7eb;
+     /* gray-200 */
+}
+
+.dark .text-gray-700 {
+     color: #d1d5db;
+     /* gray-300 */
+}
+
+.dark .text-gray-600 {
+     color: #9ca3af;
+     /* gray-400 */
+}
+
+.dark .text-gray-500 {
+     color: #6b7280;
+     /* gray-500 */
+}
+
+.dark .text-gray-400 {
+     color: #4b5563;
+     /* gray-600 */
+}
+
+/* Hover states */
+.dark .hover\:bg-gray-100:hover {
+     background-color: #374151;
+     /* gray-700 */
+}
+
+.dark .hover\:bg-gray-50:hover {
+     background-color: #1f2937;
+     /* gray-800 */
+}
+
+/* Borders */
+.dark .border-gray-200 {
+     border-color: #374151;
+     /* gray-700 */
+}
+
+/* Remove shadows in dark mode */
+.dark .shadow-sm,
+.dark .shadow-md,
+.dark .shadow-lg {
+     box-shadow: none;
+}

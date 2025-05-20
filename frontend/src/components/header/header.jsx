@@ -1,15 +1,88 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell, Search, User, Settings, X, Sun, Moon } from 'lucide-react';
+// import { signOut } from '../../lib/auth';
+// import { useAuth } from '../auth/AuthProvider';
 import { useTheme } from '../ThemeProvider';
+// import { supabase } from '../../lib/supabase';
 
-const Header = ({ userName = 'User', userAvatar = null }) => {
+const Header = ({
+     userName,
+     userAvatar
+}) => {
      const [isProfileOpen, setIsProfileOpen] = useState(false);
      const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
      const [notifications, setNotifications] = useState([]);
      const [unreadCount, setUnreadCount] = useState(0);
-
+     const navigate = useNavigate();
+     // const { user } = useAuth();
      const { theme, toggleTheme } = useTheme();
+
+     useEffect(() => {
+          //     fetchNotifications();
+          //     // Subscribe to notifications
+          //     const channel = supabase
+          //       .channel('notifications')
+          //       .on('postgres_changes', {
+          //         event: '*',
+          //         schema: 'public',
+          //         table: 'notifications'
+          //       }, payload => {
+          //         fetchNotifications();
+          //       })
+          //       .subscribe();
+
+          //     return () => {
+          //       supabase.removeChannel(channel);
+          //     };
+     }, []);
+
+     //   const fetchNotifications = async () => {
+     //     try {
+     //       const { data } = await supabase
+     //         .from('notifications')
+     //         .select('*')
+     //         .order('created_at', { ascending: false })
+     //         .limit(10);
+
+     //       if (data) {
+     //         const formattedNotifications = data.map(n => ({
+     //           ...n,
+     //           createdAt: new Date(n.created_at)
+     //         }));
+     //         setNotifications(formattedNotifications);
+     //         setUnreadCount(formattedNotifications.filter(n => !n.read).length);
+     //       }
+     //     } catch (error) {
+     //       console.error('Error fetching notifications:', error);
+     //     }
+     //   };
+
+     //   const markAsRead = async (id) => {
+     //     try {
+     //       await supabase
+     //         .from('notifications')
+     //         .update({ read: true })
+     //         .eq('id', id);
+
+     //       await fetchNotifications();
+     //     } catch (error) {
+     //       console.error('Error marking notification as read:', error);
+     //     }
+     //   };
+
+     //   const markAllAsRead = async () => {
+     //     try {
+     //       await supabase
+     //         .from('notifications')
+     //         .update({ read: true })
+     //         .eq('read', false);
+
+     //       await fetchNotifications();
+     //     } catch (error) {
+     //       console.error('Error marking all notifications as read:', error);
+     //     }
+     //   };
 
      const toggleProfile = () => {
           setIsProfileOpen(!isProfileOpen);
@@ -19,6 +92,15 @@ const Header = ({ userName = 'User', userAvatar = null }) => {
      const toggleNotifications = () => {
           setIsNotificationsOpen(!isNotificationsOpen);
           setIsProfileOpen(false);
+     };
+
+     const handleSignOut = async () => {
+          try {
+               await signOut();
+               navigate('/login');
+          } catch (error) {
+               console.error('Error signing out:', error);
+          }
      };
 
      const getNotificationIcon = (type) => {
@@ -41,27 +123,15 @@ const Header = ({ userName = 'User', userAvatar = null }) => {
           );
      };
 
-
-     useEffect(() => {
-          const storedTheme = localStorage.getItem('theme');
-          if (storedTheme === 'dark') {
-               document.documentElement.classList.add('dark');
-          } else {
-               document.documentElement.classList.remove('dark');
-          }
-     }, []);
-
      return (
-          <header className="bg-white border-b border-gray-200 dark:border-gray-700 h-16">
+          <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 h-16">
                <div className="h-full px-4 flex items-center justify-between">
                     {/* Search Bar */}
-
 
                     <div className="relative max-w-xs w-full hidden sm:block">
                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                               {/* <Search size={18} className="text-gray-400 dark:text-gray-500" /> */}
                          </div>
-
 
                          {/* <input
                               type="text"
@@ -72,7 +142,6 @@ const Header = ({ userName = 'User', userAvatar = null }) => {
 
                     {/* Right Side Actions */}
                     <div className="flex items-center gap-4">
-
                          {/* Theme Toggle */}
                          <button
                               onClick={toggleTheme}
@@ -95,12 +164,16 @@ const Header = ({ userName = 'User', userAvatar = null }) => {
                                    )}
                               </button>
 
+                              {/* Notifications Dropdown */}
                               {isNotificationsOpen && (
                                    <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg py-1 z-50 border border-gray-200 dark:border-gray-700">
                                         <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                                              <h3 className="font-semibold text-gray-900 dark:text-gray-100">Notifications</h3>
                                              {unreadCount > 0 && (
-                                                  <button className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300">
+                                                  <button
+                                                       onClick={markAllAsRead}
+                                                       className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300"
+                                                  >
                                                        Mark all as read
                                                   </button>
                                              )}
@@ -124,7 +197,10 @@ const Header = ({ userName = 'User', userAvatar = null }) => {
                                                                  </p>
                                                             </div>
                                                             {!notification.read && (
-                                                                 <button className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
+                                                                 <button
+                                                                      onClick={() => markAsRead(notification.id)}
+                                                                      className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+                                                                 >
                                                                       <X size={16} />
                                                                  </button>
                                                             )}
@@ -157,8 +233,8 @@ const Header = ({ userName = 'User', userAvatar = null }) => {
                                              <User size={16} />
                                         )}
                                    </div>
-                                   <span className="text-sm font-medium text-black-700 dark:text-black-200 hidden md:block">
-                                        {userName}
+                                   <span className="text-sm font-medium text-gray-700 dark:text-gray-200 hidden md:block">
+                                        {/* {user?.email} */}
                                    </span>
                               </button>
 
@@ -180,7 +256,7 @@ const Header = ({ userName = 'User', userAvatar = null }) => {
                                         </a>
                                         <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
                                         <button
-                                             onClick={() => alert('Sign out clicked')}
+                                             onClick={handleSignOut}
                                              className="block w-full text-left px-4 py-2 text-sm text-red-700 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700"
                                         >
                                              Sign out

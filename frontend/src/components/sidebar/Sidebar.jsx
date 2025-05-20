@@ -14,8 +14,11 @@ import {
      X,
      LogOut
 } from 'lucide-react';
+import { useTheme } from '../ThemeProvider';
 
 const SidebarItem = ({ title, icon, path, isActive }) => {
+     const { theme } = useTheme();
+
      return (
           <Link
                to={path}
@@ -34,20 +37,65 @@ const SidebarItem = ({ title, icon, path, isActive }) => {
      );
 };
 
-const Sidebar = () => {
+const Sidebar = ({ userRole }) => {
      const location = useLocation();
      const [isMobileOpen, setIsMobileOpen] = useState(false);
 
      const sidebarItems = [
-          { title: 'Dashboard', icon: <LayoutDashboard size={18} />, path: '/' },
-          { title: 'Products', icon: <Package size={18} />, path: '/products' },
-          { title: 'Category', icon: <Tag size={18} />, path: '/category' },
-          { title: 'Customers', icon: <Users size={18} />, path: '/customers' },
-          { title: 'Suppliers', icon: <Truck size={18} />, path: '/suppliers' },
-          { title: 'Purchase', icon: <ShoppingCart size={18} />, path: '/purchase' },
-          { title: 'Sales', icon: <Receipt size={18} />, path: '/sales' },
-          { title: 'Users', icon: <UserCircle size={18} />, path: '/users' },
-          { title: 'Report', icon: <BarChart3 size={18} />, path: '/report' },
+          {
+               title: 'Dashboard',
+               icon: <LayoutDashboard size={18} />,
+               path: '/',
+               role: 'both'
+          },
+          {
+               title: 'Products',
+               icon: <Package size={18} />,
+               path: '/products',
+               role: 'both'
+          },
+          {
+               title: 'Categories',
+               icon: <Tag size={18} />,
+               path: '/categories',
+               role: 'admin'
+          },
+          {
+               title: 'Customers',
+               icon: <Users size={18} />,
+               path: '/customers',
+               role: 'both'
+          },
+          {
+               title: 'Suppliers',
+               icon: <Truck size={18} />,
+               path: '/suppliers',
+               role: 'admin'
+          },
+          {
+               title: 'Purchases',
+               icon: <ShoppingCart size={18} />,
+               path: '/purchases',
+               role: 'admin'
+          },
+          {
+               title: 'Sales',
+               icon: <Receipt size={18} />,
+               path: '/sales',
+               role: 'both'
+          },
+          {
+               title: 'Users',
+               icon: <UserCircle size={18} />,
+               path: '/users',
+               role: 'admin'
+          },
+          {
+               title: 'Reports',
+               icon: <BarChart3 size={18} />,
+               path: '/reports',
+               role: 'admin'
+          },
      ];
 
      const toggleMobileSidebar = () => {
@@ -56,7 +104,6 @@ const Sidebar = () => {
 
      return (
           <>
-               {/* Mobile Toggle Button */}
                <button
                     className="md:hidden fixed top-4 left-4 z-50 p-2 rounded-md bg-white shadow-md"
                     onClick={toggleMobileSidebar}
@@ -64,7 +111,6 @@ const Sidebar = () => {
                     {isMobileOpen ? <X size={20} /> : <Menu size={20} />}
                </button>
 
-               {/* Sidebar Container */}
                <aside
                     className={`
           fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-gray-200
@@ -73,28 +119,29 @@ const Sidebar = () => {
           ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
                >
-                    {/* Logo */}
                     <div className="p-4 border-b border-gray-200">
                          <div className="flex items-center gap-2">
                               <Package size={24} className="text-indigo-600" />
-                              <h1 className="text-xl font-bold text-gray-900">Inventory System</h1>
+                              <h1 className="text-xl font-bold text-gray-900">
+                                   {userRole === 'admin' ? 'Admin Portal' : 'Staff Portal'}
+                              </h1>
                          </div>
                     </div>
 
-                    {/* Navigation Links */}
                     <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-                         {sidebarItems.map(item => (
+                         {sidebarItems.map((item) => (
                               <SidebarItem
                                    key={item.path}
                                    title={item.title}
                                    icon={item.icon}
                                    path={item.path}
                                    isActive={location.pathname === item.path}
+                                   role={item.role}
+                                   userRole={userRole}
                               />
                          ))}
                     </nav>
 
-                    {/* User Section */}
                     <div className="p-4 border-t border-gray-200">
                          <Link
                               to="/profile"

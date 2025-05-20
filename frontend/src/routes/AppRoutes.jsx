@@ -16,22 +16,34 @@ import { ThemeProvider } from '../components/ThemeProvider';
 const AppRoutes = () => {
      return (
           <ThemeProvider>
+
                <Routes>
-                    <Route path="/" element={<ProtectedLayout />}>
-                         <Route index element={<Dashboard />} /> {/* default route */}
-                         <Route path="products" element={<Products />} />
-                         <Route path="category" element={<Category />} />
-                         <Route path="customers" element={<Customers />} />
-                         <Route path="suppliers" element={<Suppliers />} /> {/* fixed typo */}
-                         <Route path="purchase" element={<Purchase />} />
-                         <Route path="sales" element={<Sales />} />
-                         <Route path="users" element={<Users />} />
-                         <Route path="report" element={<Report />} />
-                         {/* Add more routes here as you build */}
+
+
+                    <Route element={
+
+                         <ProtectedLayout />
+
+                    }>
+                         <Route path="/" element={<Dashboard />} />
+                         <Route path="/products" element={<Products />} />
+                         <Route path="/categories" element={<Category />} />
+                         <Route path="/customers" element={<Customers />} />
+                         <Route path="/suppliers" element={<Suppliers />} />
+                         <Route path="/purchases" element={<Purchase />} />
+                         <Route path="/sales" element={<Sales />} />
+                         <Route path="/users" element={<Users />} />
+                         <Route path="/reports" element={<Report />} />
+                         <Route path="/profile" element={<div className="p-4">Profile Page (Coming Soon)</div>} />
+
+                         {/* Redirect any unknown routes to the dashboard */}
+
                     </Route>
                </Routes>
+
+
           </ThemeProvider>
      );
-};
+}
 
 export default AppRoutes;

@@ -1,14 +1,12 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
-  darkMode: 'class',
+  darkMode: 'class', // Correct - this enables class-based dark mode
   theme: {
     extend: {
-      backgroundColor: {
+      colors: { // Change from backgroundColor/textColor to colors
         background: 'var(--background)',
         'background-secondary': 'var(--background-secondary)',
-      },
-      textColor: {
         text: 'var(--text)',
         'text-secondary': 'var(--text-secondary)',
       },
