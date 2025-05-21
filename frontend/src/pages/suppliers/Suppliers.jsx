@@ -103,6 +103,8 @@ const SuppliersPage = () => {
                               onChange={(e) => setSearchTerm(e.target.value)}
                               className="w-full"
                          />
+
+
                     </div>
 
                     <div className="relative">
@@ -145,6 +147,8 @@ const SuppliersPage = () => {
                               </div>
                          )}
                     </div>
+
+
 
                     <div className="relative">
                          <Button
