@@ -9,13 +9,15 @@ import {
      Truck,
      Mail,
      Phone,
-     Check
+     Check,
+     Loader2
 } from 'lucide-react';
 import Button from '../../components/ui/button';
 import Input from '../../components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
-
 import NewSupplierModal from '../../components/modals/NewSupplierModal';
+
+const API_URL = 'http://localhost:5000/api/suppliers';
 
 const SuppliersPage = () => {
      const [searchTerm, setSearchTerm] = useState('');
@@ -32,19 +34,24 @@ const SuppliersPage = () => {
      });
 
      const fetchSuppliers = async () => {
+          setLoading(true);
           try {
-               let query = supabase
-                    .from('suppliers')
-                    .select('*')
-                    .order(sortField, { ascending: sortOrder === 'asc' });
+               const url = new URL(API_URL);
+               url.searchParams.append('sortBy', sortField);
+               url.searchParams.append('order', sortOrder);
 
-               const { data } = await query;
+               const response = await fetch(url);
 
-               if (data) {
-                    setSuppliers(data);
+               if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to fetch suppliers');
                }
+
+               const data = await response.json();
+               setSuppliers(data);
           } catch (error) {
                console.error('Error fetching suppliers:', error);
+               // You might want to set some error state here to show to the user
           } finally {
                setLoading(false);
           }
@@ -58,8 +65,8 @@ const SuppliersPage = () => {
           const matchesSearch =
                supplier.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                supplier.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-               supplier.phone?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-               supplier.address?.toLowerCase().includes(searchTerm.toLowerCase());
+               (supplier.phone && supplier.phone.toLowerCase().includes(searchTerm.toLowerCase())) ||
+               (supplier.address && supplier.address.toLowerCase().includes(searchTerm.toLowerCase()));
 
           const matchesFilters =
                (!filterOptions.hasPhone || (supplier.phone && supplier.phone.trim() !== '')) &&
@@ -82,7 +89,6 @@ const SuppliersPage = () => {
           <div className="space-y-6">
                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <h1 className="text-2xl font-bold text-gray-900">Suppliers</h1>
-
                     <Button
                          variant="primary"
                          size="md"
@@ -93,18 +99,15 @@ const SuppliersPage = () => {
                     </Button>
                </div>
 
-               {/* Filters and Search */}
                <div className="flex flex-col sm:flex-row gap-4">
                     <div className="relative flex-1">
                          <Input
-                              placeholder="Search suppliers..."
+                              placeholder="Search by name, email, phone or address..."
                               icon={<Search size={18} className="text-gray-400" />}
                               value={searchTerm}
                               onChange={(e) => setSearchTerm(e.target.value)}
                               className="w-full"
                          />
-
-
                     </div>
 
                     <div className="relative">
@@ -127,7 +130,7 @@ const SuppliersPage = () => {
                                                        ...filterOptions,
                                                        hasPhone: e.target.checked
                                                   })}
-                                                  className="rounded border-gray-300"
+                                                  className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                                              />
                                              <span className="text-sm">Has Phone Number</span>
                                         </label>
@@ -139,7 +142,7 @@ const SuppliersPage = () => {
                                                        ...filterOptions,
                                                        hasAddress: e.target.checked
                                                   })}
-                                                  className="rounded border-gray-300"
+                                                  className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                                              />
                                              <span className="text-sm">Has Address</span>
                                         </label>
@@ -147,8 +150,6 @@ const SuppliersPage = () => {
                               </div>
                          )}
                     </div>
-
-
 
                     <div className="relative">
                          <Button
@@ -193,7 +194,6 @@ const SuppliersPage = () => {
                     </div>
                </div>
 
-               {/* Suppliers Table */}
                <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
                     <Table>
                          <TableHeader>
@@ -210,7 +210,10 @@ const SuppliersPage = () => {
                               {loading ? (
                                    <TableRow>
                                         <TableCell colSpan={5} className="text-center py-8">
-                                             Loading suppliers...
+                                             <div className="flex items-center justify-center gap-2">
+                                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                                  <span>Loading suppliers...</span>
+                                             </div>
                                         </TableCell>
                                    </TableRow>
                               ) : filteredSuppliers.length > 0 ? (
@@ -240,12 +243,14 @@ const SuppliersPage = () => {
                                                   </div>
                                              </TableCell>
 
-                                             <TableCell>{supplier.address}</TableCell>
+                                             <TableCell>
+                                                  {supplier.address || '-'}
+                                             </TableCell>
 
                                              <TableCell>
                                                   {new Date(supplier.created_at).toLocaleDateString('en-US', {
                                                        year: 'numeric',
-                                                       month: 'long',
+                                                       month: 'short',
                                                        day: 'numeric'
                                                   })}
                                              </TableCell>
@@ -256,6 +261,7 @@ const SuppliersPage = () => {
                                                             variant="ghost"
                                                             size="sm"
                                                             icon={<Edit size={16} />}
+                                                            className="hover:bg-gray-100"
                                                        >
                                                             Edit
                                                        </Button>

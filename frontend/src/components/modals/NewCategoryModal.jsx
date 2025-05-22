@@ -23,29 +23,28 @@ const NewCategoryModal = ({ isOpen, onClose, onSuccess }) => {
           setLoading(true);
           setError(null);
 
-          if (!formData.name.trim()) {
-               setError('Category name is required');
-               setLoading(false);
-               return;
-          }
-
           try {
-               const { error: insertError } = await supabase
-                    .from('categories')
-                    .insert([{ ...formData }]);
+               const response = await fetch('http://localhost:5000/api/categories', {
+                    method: 'POST',
+                    headers: {
+                         'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData),
+               });
 
-               if (insertError) throw insertError;
+               if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to create category');
+               }
 
                onSuccess();
                onClose();
-               setFormData({ name: '', description: '' });
           } catch (err) {
-               setError(err.message || 'Something went wrong');
+               setError(err.message);
           } finally {
                setLoading(false);
           }
      };
-
      if (!isOpen) return null;
 
      return (

@@ -3,6 +3,7 @@ import { Building2, Mail, Phone, MapPin } from 'lucide-react';
 import Button from '../ui/button';
 import Input from '../ui/input';
 
+const API_URL = 'http://localhost:5000/api/suppliers';
 
 const NewSupplierModal = ({ isOpen, onClose, onSuccess }) => {
      const [loading, setLoading] = useState(false);
@@ -19,12 +20,52 @@ const NewSupplierModal = ({ isOpen, onClose, onSuccess }) => {
           setLoading(true);
           setError(null);
 
-          try {
-               const { error: insertError } = await supabase
-                    .from('suppliers')
-                    .insert([formData]);
+          // Validation
+          if (!formData.name.trim()) {
+               setError('Company name is required');
+               setLoading(false);
+               return;
+          }
 
-               if (insertError) throw insertError;
+          if (!formData.email.trim()) {
+               setError('Email is required');
+               setLoading(false);
+               return;
+          }
+
+          if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
+               setError('Please enter a valid email address');
+               setLoading(false);
+               return;
+          }
+
+          try {
+               const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                         'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                         name: formData.name.trim(),
+                         email: formData.email.trim(),
+                         phone: formData.phone.trim() || null,
+                         address: formData.address.trim() || null
+                    })
+               });
+
+               const data = await response.json();
+
+               if (!response.ok) {
+                    throw new Error(data.error || 'Failed to create supplier');
+               }
+
+               // Reset form
+               setFormData({
+                    name: '',
+                    email: '',
+                    phone: '',
+                    address: ''
+               });
 
                onSuccess();
                onClose();
@@ -50,6 +91,7 @@ const NewSupplierModal = ({ isOpen, onClose, onSuccess }) => {
                               icon={<Building2 size={18} />}
                               value={formData.name}
                               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                              placeholder="Enter company name"
                               required
                          />
 
@@ -59,22 +101,25 @@ const NewSupplierModal = ({ isOpen, onClose, onSuccess }) => {
                               icon={<Mail size={18} />}
                               value={formData.email}
                               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                              placeholder="Enter email address"
                               required
                          />
 
                          <Input
-                              label="Phone"
+                              label="Phone (Optional)"
                               type="tel"
                               icon={<Phone size={18} />}
                               value={formData.phone}
                               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                              placeholder="Enter phone number"
                          />
 
                          <Input
-                              label="Address"
+                              label="Address (Optional)"
                               icon={<MapPin size={18} />}
                               value={formData.address}
                               onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                              placeholder="Enter physical address"
                          />
 
                          {error && (
@@ -83,16 +128,22 @@ const NewSupplierModal = ({ isOpen, onClose, onSuccess }) => {
                               </div>
                          )}
 
-                         <div className="flex justify-end gap-2">
-                              <Button variant="outline" onClick={onClose}>
+                         <div className="flex justify-end gap-2 pt-2">
+                              <Button
+                                   variant="outline"
+                                   onClick={onClose}
+                                   disabled={loading}
+                                   type="button"
+                              >
                                    Cancel
                               </Button>
                               <Button
                                    variant="primary"
                                    type="submit"
                                    isLoading={loading}
+                                   disabled={loading}
                               >
-                                   Create Supplier
+                                   {loading ? 'Creating...' : 'Create Supplier'}
                               </Button>
                          </div>
                     </form>

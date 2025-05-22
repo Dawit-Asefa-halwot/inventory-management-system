@@ -35,34 +35,36 @@ const CategoriesPage = () => {
      const [filterOptions, setFilterOptions] = useState({
           hasDescription: false
      });
-
+     const [error, setError] = useState(null);
      const fetchCategories = async () => {
           try {
-               let query = supabase
-                    .from('categories')
-                    .select('*')
-                    .order(sortField, { ascending: sortOrder === 'asc' });
+               setLoading(true);
+               const response = await fetch('http://localhost:5000/api/categories');
 
-               const { data } = await query;
-
-               if (data) {
-                    setCategories(data);
+               if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
                }
+
+               const data = await response.json();
+               setCategories(data);
+               setError(null);
           } catch (error) {
-               console.error('Error fetching categories:', error);
+               console.error('Fetch error:', error);
+               setError(error.message);
           } finally {
                setLoading(false);
           }
      };
 
+
      useEffect(() => {
           fetchCategories();
      }, [sortField, sortOrder]);
 
-     const filteredCategories = categories.filter((category) => {
+     const filteredCategories = categories.filter((categories) => {
           const matchesSearch =
-               category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-               category.description?.toLowerCase().includes(searchTerm.toLowerCase());
+               categories.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+               categories.description?.toLowerCase().includes(searchTerm.toLowerCase());
 
           const matchesFilters =
                !filterOptions.hasDescription ||
@@ -80,6 +82,54 @@ const CategoriesPage = () => {
           }
           setShowSortMenu(false);
      };
+
+     const handleEditCategory = (categories) => {
+          // Implement your edit modal logic here
+          console.log('Edit category:', category);
+     };
+
+     const handleDeleteCategory = async (id) => {
+          try {
+               const response = await fetch(`http://localhost:5000/api/categories/${id}`, {
+                    method: 'DELETE'
+               });
+
+               if (!response.ok) {
+                    throw new Error('Failed to delete category');
+               }
+
+               // Refresh the category list
+               fetchCategories();
+          } catch (error) {
+               console.error('Delete error:', error);
+               setError(error.message);
+          }
+     };
+
+     <TableRow key={categories.id}>
+          {/* ... other cells ... */}
+          <TableCell className="text-right">
+               <div className="flex justify-end gap-2">
+                    <Button
+                         variant="ghost"
+                         size="sm"
+                         icon={<Edit size={16} />}
+                         onClick={() => handleEditCategory(category)}
+                    >
+                         Edit
+                    </Button>
+                    <Button
+                         variant="ghost"
+                         size="sm"
+                         icon={<Trash size={16} />}
+                         className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                         onClick={() => handleDeleteCategory(categories.id)}
+                    >
+                         Delete
+                    </Button>
+               </div>
+          </TableCell>
+     </TableRow>
 
      return (
           <div className="space-y-6">
@@ -181,6 +231,7 @@ const CategoriesPage = () => {
                               </TableRow>
                          </TableHeader>
 
+
                          <TableBody>
                               {loading ? (
                                    <TableRow>
@@ -189,19 +240,21 @@ const CategoriesPage = () => {
                                         </TableCell>
                                    </TableRow>
                               ) : filteredCategories.length > 0 ? (
-                                   filteredCategories.map((category) => (
-                                        <TableRow key={category.id}>
+                                   filteredCategories.map((categories) => ( // This is where category is defined
+                                        <TableRow key={categories.id}>
                                              <TableCell>
                                                   <div className="flex items-center gap-3">
                                                        <div className="w-8 h-8 rounded-md bg-indigo-100 text-indigo-600 flex items-center justify-center">
                                                             <Tag size={16} />
                                                        </div>
-                                                       <span className="font-medium text-gray-900">{category.name}</span>
+                                                       <span className="font-medium text-gray-900">
+                                                            {categories.name}
+                                                       </span>
                                                   </div>
                                              </TableCell>
-                                             <TableCell>{category.description}</TableCell>
+                                             <TableCell>{categories.description}</TableCell>
                                              <TableCell>
-                                                  {new Date(category.created_at).toLocaleDateString('en-US', {
+                                                  {new Date(categories.created_at).toLocaleDateString('en-US', {
                                                        year: 'numeric',
                                                        month: 'long',
                                                        day: 'numeric'
@@ -213,6 +266,7 @@ const CategoriesPage = () => {
                                                             variant="ghost"
                                                             size="sm"
                                                             icon={<Edit size={16} />}
+                                                            onClick={() => handleEditCategory(category)}
                                                        >
                                                             Edit
                                                        </Button>
@@ -221,6 +275,7 @@ const CategoriesPage = () => {
                                                             size="sm"
                                                             icon={<Trash size={16} />}
                                                             className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                            onClick={() => handleDeleteCategory(categories.id)}
                                                        >
                                                             Delete
                                                        </Button>
