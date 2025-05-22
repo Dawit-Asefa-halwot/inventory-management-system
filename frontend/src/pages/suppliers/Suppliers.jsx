@@ -17,7 +17,7 @@ import Input from '../../components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
 import NewSupplierModal from '../../components/modals/NewSupplierModal';
 
-const API_URL = 'http://localhost:5000/api/suppliers';
+
 
 const SuppliersPage = () => {
      const [searchTerm, setSearchTerm] = useState('');
@@ -34,28 +34,25 @@ const SuppliersPage = () => {
      });
 
      const fetchSuppliers = async () => {
-          setLoading(true);
           try {
-               const url = new URL(API_URL);
-               url.searchParams.append('sortBy', sortField);
-               url.searchParams.append('order', sortOrder);
-
-               const response = await fetch(url);
+               setLoading(true);
+               const response = await fetch(`http://localhost:5000/api/suppliers?sortBy=${sortField}&order=${sortOrder}`);
 
                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Failed to fetch suppliers');
+                    throw new Error(`HTTP error! status: ${response.status}`);
                }
 
                const data = await response.json();
                setSuppliers(data);
           } catch (error) {
-               console.error('Error fetching suppliers:', error);
-               // You might want to set some error state here to show to the user
+               console.error('Fetch error:', error);
+               setError(error.message);
           } finally {
                setLoading(false);
           }
      };
+
+
 
      useEffect(() => {
           fetchSuppliers();
@@ -84,6 +81,38 @@ const SuppliersPage = () => {
           }
           setShowSortMenu(false);
      };
+
+
+
+     // Add this in your SuppliersPage component
+     const handleDeleteSuppliers = async (id) => {
+          try {
+               const response = await fetch(`http://localhost:5000/api/suppliers/${id}`, {
+                    method: 'DELETE'
+               });
+
+               if (!response.ok) {
+                    throw new Error('Failed to delete customer');
+               }
+
+               fetchSuppliers();
+          } catch (error) {
+               console.error('Delete error:', error);
+               setError(error.message);
+          }
+     };
+
+     // Update the delete button
+     <Button
+          variant="ghost"
+          size="sm"
+          icon={<Trash size={16} />}
+          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+          onClick={() => handleDeleteSuppliers(customer.id)}
+     >
+          Delete
+     </Button>
+
 
      return (
           <div className="space-y-6">

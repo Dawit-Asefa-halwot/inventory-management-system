@@ -79,6 +79,11 @@ const CustomersPage = () => {
      };
 
 
+     const handleEditCustomer = (categories) => {
+          // Implement your edit modal logic here
+          console.log('Edit category:', category);
+     };
+
 
      // Add this in your CustomersPage component
      const handleDeleteCustomer = async (id) => {
@@ -98,16 +103,36 @@ const CustomersPage = () => {
           }
      };
 
-     // Update the delete button
-     <Button
-          variant="ghost"
-          size="sm"
-          icon={<Trash size={16} />}
-          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-          onClick={() => handleDeleteCustomer(customers.id)}
-     >
-          Delete
-     </Button>
+
+
+
+
+
+
+     <TableRow key={customers.id}>
+          {/* ... other cells ... */}
+          <TableCell className="text-right">
+               <div className="flex justify-end gap-2">
+                    <Button
+                         variant="ghost"
+                         size="sm"
+                         icon={<Edit size={16} />}
+                         onClick={() => handleEditCustomer(customers)}
+                    >
+                         Edit
+                    </Button>
+                    <Button
+                         variant="ghost"
+                         size="sm"
+                         icon={<Trash size={16} />}
+                         className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                         onClick={() => handleDeleteCustomer(customers.id)}
+                    >
+                         Delete
+                    </Button>
+               </div>
+          </TableCell>
+     </TableRow>
 
 
 
@@ -221,6 +246,10 @@ const CustomersPage = () => {
                     </div>
                </div>
 
+
+
+
+
                <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
                     <Table>
                          <TableHeader>
@@ -283,6 +312,7 @@ const CustomersPage = () => {
                                                             variant="ghost"
                                                             size="sm"
                                                             icon={<Edit size={16} />}
+                                                            onClick={() => handleEditCustomer(customers)}
                                                        >
                                                             Edit
                                                        </Button>
@@ -292,6 +322,7 @@ const CustomersPage = () => {
                                                             size="sm"
                                                             icon={<Trash size={16} />}
                                                             className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                            onClick={() => handleDeleteCustomer(customers.id)}
                                                        >
                                                             Delete
                                                        </Button>

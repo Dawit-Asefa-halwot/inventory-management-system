@@ -3,7 +3,7 @@ import { Building2, Mail, Phone, MapPin } from 'lucide-react';
 import Button from '../ui/button';
 import Input from '../ui/input';
 
-const API_URL = 'http://localhost:5000/api/suppliers';
+
 
 const NewSupplierModal = ({ isOpen, onClose, onSuccess }) => {
      const [loading, setLoading] = useState(false);
@@ -20,52 +20,19 @@ const NewSupplierModal = ({ isOpen, onClose, onSuccess }) => {
           setLoading(true);
           setError(null);
 
-          // Validation
-          if (!formData.name.trim()) {
-               setError('Company name is required');
-               setLoading(false);
-               return;
-          }
-
-          if (!formData.email.trim()) {
-               setError('Email is required');
-               setLoading(false);
-               return;
-          }
-
-          if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
-               setError('Please enter a valid email address');
-               setLoading(false);
-               return;
-          }
-
           try {
-               const response = await fetch(API_URL, {
+               const response = await fetch('http://localhost:5000/api/suppliers', {
                     method: 'POST',
                     headers: {
                          'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({
-                         name: formData.name.trim(),
-                         email: formData.email.trim(),
-                         phone: formData.phone.trim() || null,
-                         address: formData.address.trim() || null
-                    })
+                    body: JSON.stringify(formData),
                });
-
-               const data = await response.json();
 
                if (!response.ok) {
-                    throw new Error(data.error || 'Failed to create supplier');
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to create customer');
                }
-
-               // Reset form
-               setFormData({
-                    name: '',
-                    email: '',
-                    phone: '',
-                    address: ''
-               });
 
                onSuccess();
                onClose();

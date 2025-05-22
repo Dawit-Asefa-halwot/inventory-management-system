@@ -83,10 +83,13 @@ const CategoriesPage = () => {
           setShowSortMenu(false);
      };
 
-     const handleEditCategory = (categories) => {
+     const handleEditCategory = (category) => {
           // Implement your edit modal logic here
           console.log('Edit category:', category);
      };
+
+
+
 
      const handleDeleteCategory = async (id) => {
           try {
@@ -106,6 +109,10 @@ const CategoriesPage = () => {
           }
      };
 
+
+
+
+
      <TableRow key={categories.id}>
           {/* ... other cells ... */}
           <TableCell className="text-right">
@@ -114,7 +121,7 @@ const CategoriesPage = () => {
                          variant="ghost"
                          size="sm"
                          icon={<Edit size={16} />}
-                         onClick={() => handleEditCategory(category)}
+                         onClick={() => handleEditCategory(categories)}
                     >
                          Edit
                     </Button>
@@ -220,6 +227,9 @@ const CategoriesPage = () => {
                     </div>
                </div>
 
+
+
+
                <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
                     <Table>
                          <TableHeader>
@@ -266,7 +276,7 @@ const CategoriesPage = () => {
                                                             variant="ghost"
                                                             size="sm"
                                                             icon={<Edit size={16} />}
-                                                            onClick={() => handleEditCategory(category)}
+                                                            onClick={() => handleEditCategory(categories)}
                                                        >
                                                             Edit
                                                        </Button>
