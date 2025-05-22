@@ -20,11 +20,18 @@ const NewCustomerModal = ({ isOpen, onClose, onSuccess }) => {
           setError(null);
 
           try {
-               const { error: insertError } = await supabase
-                    .from('customers')
-                    .insert([formData]);
+               const response = await fetch('http://localhost:5000/api/customers', {
+                    method: 'POST',
+                    headers: {
+                         'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData),
+               });
 
-               if (insertError) throw insertError;
+               if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to create customer');
+               }
 
                onSuccess();
                onClose();

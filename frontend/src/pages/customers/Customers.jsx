@@ -33,18 +33,18 @@ const CustomersPage = () => {
 
      const fetchCustomers = async () => {
           try {
-               let query = supabase
-                    .from('customers')
-                    .select('*')
-                    .order(sortField, { ascending: sortOrder === 'asc' });
+               setLoading(true);
+               const response = await fetch(`http://localhost:5000/api/customers?sortBy=${sortField}&order=${sortOrder}`);
 
-               const { data } = await query;
-
-               if (data) {
-                    setCustomers(data);
+               if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
                }
+
+               const data = await response.json();
+               setCustomers(data);
           } catch (error) {
-               console.error('Error fetching customers:', error);
+               console.error('Fetch error:', error);
+               setError(error.message);
           } finally {
                setLoading(false);
           }
@@ -77,6 +77,39 @@ const CustomersPage = () => {
           }
           setShowSortMenu(false);
      };
+
+
+
+     // Add this in your CustomersPage component
+     const handleDeleteCustomer = async (id) => {
+          try {
+               const response = await fetch(`http://localhost:5000/api/customers/${id}`, {
+                    method: 'DELETE'
+               });
+
+               if (!response.ok) {
+                    throw new Error('Failed to delete customer');
+               }
+
+               fetchCustomers();
+          } catch (error) {
+               console.error('Delete error:', error);
+               setError(error.message);
+          }
+     };
+
+     // Update the delete button
+     <Button
+          variant="ghost"
+          size="sm"
+          icon={<Trash size={16} />}
+          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+          onClick={() => handleDeleteCustomer(customers.id)}
+     >
+          Delete
+     </Button>
+
+
 
      return (
           <div className="space-y-6">
