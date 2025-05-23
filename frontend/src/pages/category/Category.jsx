@@ -61,10 +61,10 @@ const CategoriesPage = () => {
           fetchCategories();
      }, [sortField, sortOrder]);
 
-     const filteredCategories = categories.filter((categories) => {
+     const filteredCategories = categories.filter((category) => {
           const matchesSearch =
-               categories.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-               categories.description?.toLowerCase().includes(searchTerm.toLowerCase());
+               category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+               category.description?.toLowerCase().includes(searchTerm.toLowerCase());
 
           const matchesFilters =
                !filterOptions.hasDescription ||

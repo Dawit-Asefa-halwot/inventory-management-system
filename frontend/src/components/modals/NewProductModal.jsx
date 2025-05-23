@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Package, Tag, DollarSign, Hash, Upload, Image } from 'lucide-react';
 import Button from '../ui/button';
 import Input from '../ui/input';
-// import { supabase } from '../../lib/supabase';
+
 
 const NewProductModal = ({ isOpen, onClose, onSuccess }) => {
      const [loading, setLoading] = useState(false);
@@ -24,39 +24,44 @@ const NewProductModal = ({ isOpen, onClose, onSuccess }) => {
 
      const fetchCategories = async () => {
           try {
-               const { data } = await supabase
-                    .from('categories')
-                    .select('id, name')
-                    .order('name');
+               setLoading(true);
+               const response = await fetch('http://localhost:5000/api/categories');
 
-               if (data) {
-                    setCategories(data);
-                    if (data.length > 0 && !formData.category_id) {
-                         setFormData(prev => ({ ...prev, category_id: data[0].id }));
-                    }
+               if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
                }
+
+               const data = await response.json();
+               setCategories(data);
+               setError(null);
           } catch (error) {
-               console.error('Error fetching categories:', error);
+               console.error('Fetch error:', error);
+               setError(error.message);
+          } finally {
+               setLoading(false);
           }
      };
 
      const handleImageUpload = async (file) => {
           try {
-               const fileExt = file.name.split('.').pop();
-               const fileName = `${Math.random()}.${fileExt}`;
-               const filePath = `product-images/${fileName}`;
+               // Create FormData object
+               const formData = new FormData();
+               formData.append('image', file);
 
-               const { error: uploadError } = await supabase.storage
-                    .from('products')
-                    .upload(filePath, file);
+               // Upload to your own API endpoint
+               const response = await fetch('http://localhost:5000/api/upload', {
+                    method: 'POST',
+                    body: formData
+               });
 
-               if (uploadError) throw uploadError;
+               if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Image upload failed');
+               }
 
-               const { data: { publicUrl } } = supabase.storage
-                    .from('products')
-                    .getPublicUrl(filePath);
+               const { imageUrl } = await response.json();
+               setFormData(prev => ({ ...prev, image_url: imageUrl }));
 
-               setFormData(prev => ({ ...prev, image_url: publicUrl }));
           } catch (err) {
                setError('Error uploading image: ' + err.message);
           }
@@ -68,18 +73,24 @@ const NewProductModal = ({ isOpen, onClose, onSuccess }) => {
           setError(null);
 
           try {
-               const qrCode = `PROD-${Math.random().toString(36).substr(2, 9)}`;
-
-               const { error: insertError } = await supabase
-                    .from('products')
-                    .insert([{
+               const response = await fetch('http://localhost:5000/api/products', {
+                    method: 'POST',
+                    headers: {
+                         'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
                          ...formData,
                          price: parseFloat(formData.price),
                          quantity: parseInt(formData.quantity),
-                         qr_code: qrCode
-                    }]);
+                         category_id: parseInt(formData.category_id)
+                    }),
+               });
 
-               if (insertError) throw insertError;
+               const data = await response.json();
+
+               if (!response.ok) {
+                    throw new Error(data.error || 'Failed to create product');
+               }
 
                onSuccess();
                onClose();

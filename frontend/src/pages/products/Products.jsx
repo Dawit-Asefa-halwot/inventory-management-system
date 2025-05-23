@@ -14,7 +14,7 @@ import Button from '../../components/ui/button';
 import Input from '../../components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
 import Badge from '../../components/ui/badge';
-// import { supabase } from '../lib/supabase';
+
 import NewProductModal from '../../components/modals/NewProductModal';
 
 const ProductsPage = () => {
@@ -40,28 +40,21 @@ const ProductsPage = () => {
      const fetchProducts = async () => {
           try {
                setLoading(true);
-               setError(null);
+               const response = await fetch('http://localhost:5000/api/products');
 
-               let query = supabase
-                    .from('products')
-                    .select(`
-          *,
-          category:categories(name)
-        `)
-                    .order(sortField, { ascending: sortOrder === 'asc' });
+               if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to fetch products');
+               }
 
-               const { data, error: fetchError } = await query;
-
-               if (fetchError) throw fetchError;
-               setProducts(data || []);
+               const data = await response.json();
+               setProducts(data);
           } catch (err) {
-               console.error('Error fetching products:', err);
-               setError('Failed to load products. Please try again.');
+               setError(err.message);
           } finally {
                setLoading(false);
           }
      };
-
      useEffect(() => {
           fetchProducts();
      }, [sortField, sortOrder]);
@@ -86,7 +79,7 @@ const ProductsPage = () => {
           const matchesSearch =
                product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                product.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-               product.category?.name.toLowerCase().includes(searchTerm.toLowerCase());
+               (product.category && product.category.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
           const matchesFilters =
                (!filterOptions.lowStock || product.quantity <= 10) &&
@@ -95,7 +88,6 @@ const ProductsPage = () => {
 
           return matchesSearch && matchesFilters;
      });
-
      const handleSort = (field) => {
           if (sortField === field) {
                setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
