@@ -23,7 +23,7 @@ const UsersPage = () => {
      const [searchTerm, setSearchTerm] = useState('');
      const [isNewUserModalOpen, setIsNewUserModalOpen] = useState(false);
      const [editingUser, setEditingUser] = useState(null);
-     const [sortField, setSortField] = useState('created_at');
+     const [sortField, setSortField] = useState('createdAt');
      const [sortOrder, setSortOrder] = useState('desc');
      const [showFilterMenu, setShowFilterMenu] = useState(false);
      const [showSortMenu, setShowSortMenu] = useState(false);
@@ -35,13 +35,17 @@ const UsersPage = () => {
      const fetchUsers = async () => {
           try {
                setLoading(true);
-               const { data: { users }, error } = await supabase.auth.admin.listUsers();
+               const response = await fetch(`http://localhost:5000/api/users?sortBy=${sortField}&order=${sortOrder}`);
 
-               if (error) throw error;
+               if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+               }
 
-               setUsers(users || []);
+               const data = await response.json();
+               setUsers(data);
           } catch (error) {
-               console.error('Error fetching users:', error);
+               console.error('Fetch error:', error);
+               setError(error.message);
           } finally {
                setLoading(false);
           }
@@ -61,14 +65,21 @@ const UsersPage = () => {
           setShowSortMenu(false);
      };
 
-     const handleDelete = async (userId) => {
-          try {
-               const { error } = await supabase.auth.admin.deleteUser(userId);
-               if (error) throw error;
 
-               await fetchUsers();
+     const handleDelete = async (id) => {
+          try {
+               const response = await fetch(`http://localhost:5000/api/users/${id}`, {
+                    method: 'DELETE'
+               });
+
+               if (!response.ok) {
+                    throw new Error('Failed to delete customer');
+               }
+
+               fetchUsers();
           } catch (error) {
-               console.error('Error deleting user:', error);
+               console.error('Delete error:', error);
+               setError(error.message);
           }
      };
 
@@ -84,8 +95,8 @@ const UsersPage = () => {
 
           const matchesRole = !filterOptions.role || user.role === filterOptions.role;
           const matchesStatus = !filterOptions.status ||
-               (filterOptions.status === 'active' && user.last_sign_in_at) ||
-               (filterOptions.status === 'inactive' && !user.last_sign_in_at);
+               (filterOptions.status === 'active' && user.lastSignInAt) ||
+               (filterOptions.status === 'inactive' && !user.lastSignInAt);
 
           return matchesSearch && matchesRole && matchesStatus;
      });
@@ -100,12 +111,12 @@ const UsersPage = () => {
                case 'role':
                     comparison = (a.role || '').localeCompare(b.role || '');
                     break;
-               case 'created_at':
-                    comparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+               case 'createdAt':
+                    comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
                     break;
-               case 'last_sign_in_at':
-                    const aTime = a.last_sign_in_at ? new Date(a.last_sign_in_at).getTime() : 0;
-                    const bTime = b.last_sign_in_at ? new Date(b.last_sign_in_at).getTime() : 0;
+               case 'lastSignInAt':
+                    const aTime = a.lastSignInAt ? new Date(a.lastSignInAt).getTime() : 0;
+                    const bTime = b.lastSignInAt ? new Date(b.lastSignInAt).getTime() : 0;
                     comparison = aTime - bTime;
                     break;
           }
@@ -211,7 +222,7 @@ const UsersPage = () => {
 
                          {showSortMenu && (
                               <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden z-50">
-                                   {['email', 'role', 'created_at', 'last_sign_in_at'].map(field => (
+                                   {['email', 'role', 'createdAt', 'last_sign_in_at'].map(field => (
                                         <button
                                              key={field}
                                              className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center justify-between"
@@ -281,12 +292,12 @@ const UsersPage = () => {
                                              </TableCell>
 
                                              <TableCell>
-                                                  {new Date(user.created_at).toLocaleDateString()}
+                                                  {new Date(user.createdAt).toLocaleDateString()}
                                              </TableCell>
 
                                              <TableCell>
-                                                  {user.last_sign_in_at
-                                                       ? new Date(user.last_sign_in_at).toLocaleDateString()
+                                                  {user.lastSignInAt
+                                                       ? new Date(user.lastSignInAt).toLocaleDateString()
                                                        : 'Never'}
                                              </TableCell>
 

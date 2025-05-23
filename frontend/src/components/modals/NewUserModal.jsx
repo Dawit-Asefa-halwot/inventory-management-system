@@ -20,18 +20,18 @@ const NewUserModal = ({ isOpen, onClose, onSuccess }) => {
           setError(null);
 
           try {
-               const { data, error: signUpError } = await supabase.auth.signUp({
-                    email: formData.email,
-                    password: formData.password,
-                    options: {
-                         data: {
-                              name: formData.name,
-                              role: formData.role
-                         }
-                    }
+               const response = await fetch('http://localhost:5000/api/users', {
+                    method: 'POST',
+                    headers: {
+                         'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData),
                });
 
-               if (signUpError) throw signUpError;
+               if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to create customer');
+               }
 
                onSuccess();
                onClose();
@@ -41,6 +41,7 @@ const NewUserModal = ({ isOpen, onClose, onSuccess }) => {
                setLoading(false);
           }
      };
+
 
      if (!isOpen) return null;
 
