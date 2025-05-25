@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-// import { supabase } from '../../lib/supabase';
 import Button from '../ui/button';
 import Input from '../ui/input';
-import { Package, Upload, Plus, Minus, X } from 'lucide-react';
+import { Upload, Plus, X } from 'lucide-react';
 
 const NewPurchaseModal = ({ isOpen, onClose, onSuccess }) => {
      const [categories, setCategories] = useState([]);
@@ -18,18 +17,23 @@ const NewPurchaseModal = ({ isOpen, onClose, onSuccess }) => {
      }, []);
 
      const fetchCategories = async () => {
-          const { data } = await supabase
-               .from('categories')
-               .select('id, name');
-          if (data) setCategories(data);
+          try {
+               const response = await fetch('http://localhost:5000/api/categories');
+               const data = await response.json();
+               setCategories(data);
+          } catch (error) {
+               console.error('Error fetching categories:', error);
+          }
      };
 
      const fetchSuppliers = async () => {
-          setSuppliers([
-               { id: 'SUP-001', name: 'Tech Solutions Inc.' },
-               { id: 'SUP-002', name: 'Global Electronics Ltd.' },
-               { id: 'SUP-003', name: 'Quality Parts Co.' }
-          ]);
+          try {
+               const response = await fetch('http://localhost:5000/api/suppliers');
+               const data = await response.json();
+               setSuppliers(data);
+          } catch (error) {
+               console.error('Error fetching suppliers:', error);
+          }
      };
 
      const handleAddProduct = () => {
@@ -37,8 +41,9 @@ const NewPurchaseModal = ({ isOpen, onClose, onSuccess }) => {
                name: '',
                description: '',
                categoryId: categories[0]?.id || '',
-               price: 0,
-               quantity: 1
+               price: '',
+               quantity: '',
+               imageUrl: ''
           }]);
      };
 
@@ -68,51 +73,57 @@ const NewPurchaseModal = ({ isOpen, onClose, onSuccess }) => {
           try {
                setLoading(true);
 
-               const { data: purchaseOrder, error: purchaseError } = await supabase
-                    .from('purchase_orders')
-                    .insert({
-                         supplier_id: supplierId,
-                         total_amount: calculateTotal(),
-                         status: 'completed'
+               // First create products
+               const products = await Promise.all(
+                    selectedProducts.map(async (product) => {
+                         // Change in handleSubmit
+                         const productPayload = {
+                              name: product.name,
+                              description: product.description,
+                              price: parseFloat(product.price).toString(),
+                              quantity: parseInt(product.quantity), // Use actual quantity
+                              category_id: parseInt(product.categoryId),
+                              image_url: product.imageUrl || ''
+                         };
+
+                         const response = await fetch('http://localhost:5000/api/products', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify(productPayload)
+                         });
+
+                         if (!response.ok) throw new Error('Product creation failed');
+                         return response.json();
                     })
-                    .select()
-                    .single();
+               );
 
-               if (purchaseError) throw purchaseError;
+               // Create purchase order payload
+               const payload = {
+                    supplier_id: parseInt(supplierId),
+                    items: products.map((createdProduct, index) => ({
+                         product_id: createdProduct.id,
+                         quantity: selectedProducts[index].quantity,
+                         price: selectedProducts[index].price.toString()
+                    }))
+               };
 
-               for (const item of selectedProducts) {
-                    const { data: product, error: productError } = await supabase
-                         .from('products')
-                         .insert({
-                              name: item.name,
-                              description: item.description,
-                              category_id: item.categoryId,
-                              price: item.price,
-                              quantity: item.quantity,
-                              image_url: item.imageUrl,
-                              qr_code: `PROD-${Math.random().toString(36).substr(2, 9)}`
-                         })
-                         .select()
-                         .single();
+               // Create purchase order
+               const response = await fetch('http://localhost:5000/api/purchase-orders', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+               });
 
-                    if (productError) throw productError;
-
-                    if (product) {
-                         await supabase
-                              .from('purchase_items')
-                              .insert({
-                                   purchase_id: purchaseOrder.id,
-                                   product_id: product.id,
-                                   quantity: item.quantity,
-                                   price: item.price
-                              });
-                    }
+               if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to create purchase order');
                }
 
                onSuccess();
                onClose();
           } catch (error) {
                console.error('Error creating purchase:', error);
+               alert(`Error creating purchase order: ${error.message}`);
           } finally {
                setLoading(false);
           }
@@ -215,8 +226,8 @@ const NewPurchaseModal = ({ isOpen, onClose, onSuccess }) => {
                                                                            size="sm"
                                                                            className="absolute top-2 right-2 bg-white"
                                                                            onClick={() => {
-                                                                                handleProductChange(index, 'imageUrl', undefined);
-                                                                                handleProductChange(index, 'imageFile', undefined);
+                                                                                handleProductChange(index, 'imageUrl', '');
+                                                                                handleProductChange(index, 'imageFile', null);
                                                                            }}
                                                                       >
                                                                            <X size={14} />

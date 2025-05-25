@@ -36,18 +36,20 @@ const PurchasesPage = () => {
      });
 
 
+     // Update fetchPurchases in PurchasesPage.jsx
      const fetchPurchases = async () => {
           try {
-               const { data } = await supabase
-                    .from('purchase_orders')
-                    .select('*')
-                    .order(sortField, { ascending: sortOrder === 'asc' });
+               const response = await fetch(
+                    `http://localhost:5000/api/purchase-orders?sortBy=${sortField}&order=${sortOrder}`
+               );
 
-               if (data) {
-                    setPurchases(data);
-               }
+               if (!response.ok) throw new Error('Failed to fetch purchases');
+
+               const data = await response.json();
+               setPurchases(data);
           } catch (error) {
                console.error('Error fetching purchases:', error);
+               alert('Failed to load purchases: ' + error.message);
           } finally {
                setLoading(false);
           }
@@ -58,8 +60,8 @@ const PurchasesPage = () => {
      }, [sortField, sortOrder]);
 
      const filteredPurchases = purchases.filter(purchase =>
-          purchase.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          purchase.supplier_id.toLowerCase().includes(searchTerm.toLowerCase())
+          purchase.id.toString().includes(searchTerm.toLowerCase()) ||
+          (purchase.supplier?.name?.toLowerCase()?.includes(searchTerm.toLowerCase()))
      );
 
      const formatDate = (date) => {
@@ -84,14 +86,16 @@ const PurchasesPage = () => {
 
      const handleUpdateStatus = async (id, status) => {
           try {
-               await supabase
-                    .from('purchase_orders')
-                    .update({ status })
-                    .eq('id', id);
+               const response = await fetch(`http://localhost:5000/api/purchase-orders/${id}/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status })
+               });
 
+               if (!response.ok) throw new Error('Update failed');
                fetchPurchases();
           } catch (error) {
-               console.error('Error updating purchase status:', error);
+               console.error('Update error:', error);
           }
      };
 
@@ -262,8 +266,8 @@ const PurchasesPage = () => {
                                         <TableRow key={purchase.id}>
                                              <TableCell className="font-medium text-gray-900">{purchase.id}</TableCell>
                                              <TableCell>{formatDate(purchase.created_at)}</TableCell>
-                                             <TableCell>Supplier #{purchase.supplier_id}</TableCell>
-                                             <TableCell className="font-medium">${purchase.total_amount.toFixed(2)}</TableCell>
+                                             <TableCell>{purchase.supplier?.name || `Supplier #${purchase.supplier_id}`}</TableCell>
+                                             <TableCell className="font-medium">${Number(purchase.total_amount).toFixed(2)}</TableCell>
                                              <TableCell>{getStatusBadge(purchase.status)}</TableCell>
                                              <TableCell className="text-right">
                                                   <div className="flex justify-end gap-2">
