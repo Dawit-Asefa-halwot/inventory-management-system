@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Button = ({
+const Button = React.forwardRef(({
      children,
      variant = 'primary',
      size = 'md',
@@ -8,7 +8,7 @@ const Button = ({
      icon,
      className = '',
      ...props
-}) => {
+}, ref) => {  // Keep this as 'ref' - don't rename it
      const baseStyles =
           'inline-flex items-center justify-center font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none';
 
@@ -30,7 +30,12 @@ const Button = ({
      const styles = `${baseStyles} ${variantStyles[variant]} ${sizeStyles[size]} ${className}`;
 
      return (
-          <button className={styles} disabled={isLoading || props.disabled} {...props}>
+          <button
+               ref={ref}  // Use the standard ref name here
+               className={styles}
+               disabled={isLoading || props.disabled}
+               {...props}
+          >
                {isLoading && (
                     <svg
                          className="animate-spin -ml-1 mr-2 h-4 w-4 text-current"
@@ -50,6 +55,8 @@ const Button = ({
                {children}
           </button>
      );
-};
+});
+
+Button.displayName = 'Button';
 
 export default Button;

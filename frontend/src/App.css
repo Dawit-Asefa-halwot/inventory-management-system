@@ -43,3 +43,19 @@
 .read-the-docs {
   color: #888;
 }
+
+@media print {
+  body {
+    margin: 0;
+    padding: 20px;
+  }
+
+  .print-content {
+    width: 100% !important;
+    font-size: 14px;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}

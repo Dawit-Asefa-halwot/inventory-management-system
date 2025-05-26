@@ -37,43 +37,14 @@ const SalesPage = () => {
           hasPhone: false,
           hasAddress: false
      });
-
      const fetchSales = async () => {
           try {
                setLoading(true);
-               setError(null);
-
-               const { data: salesData, error: salesError } = await supabase
-                    .from('sales_orders')
-                    .select('*')
-                    .order(sortField, { ascending: sortOrder === 'asc' });
-
-               if (salesError) throw salesError;
-
-               const salesWithItems = await Promise.all((salesData || []).map(async (sale) => {
-                    const { data: itemsData } = await supabase
-                         .from('sales_items')
-                         .select(`
-            quantity,
-            price,
-            product:products (*)
-          `)
-                         .eq('sale_id', sale.id);
-
-                    return {
-                         ...sale,
-                         items: itemsData?.map(item => ({
-                              product: item.product,
-                              quantity: item.quantity,
-                              price: item.price
-                         })) || []
-                    };
-               }));
-
-               setSales(salesWithItems);
+               const response = await fetch('http://localhost:5000/api/sales-orders');
+               const data = await response.json();
+               setSales(data);
           } catch (error) {
-               console.error('Error fetching sales:', error);
-               setError('Failed to load sales data. Please try again.');
+               setError('Failed to load sales data');
           } finally {
                setLoading(false);
           }
@@ -338,7 +309,9 @@ const SalesPage = () => {
                                              <TableCell className="font-medium text-gray-900">{sale.id}</TableCell>
                                              <TableCell>{formatDate(sale.created_at)}</TableCell>
                                              <TableCell>Customer #{sale.customer_id}</TableCell>
-                                             <TableCell className="font-medium">${sale.total_amount.toFixed(2)}</TableCell>
+                                             <TableCell className="font-medium">
+                                                  ${sale.total_amount.toFixed(2)}
+                                             </TableCell>
                                              <TableCell>{getStatusBadge(sale.status)}</TableCell>
                                              <TableCell className="text-right">
                                                   <div className="flex justify-end gap-2">

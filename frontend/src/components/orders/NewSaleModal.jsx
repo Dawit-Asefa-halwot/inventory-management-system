@@ -4,35 +4,43 @@ import Button from '../ui/button';
 import Input from '../ui/input';
 import { Package, Plus, Minus, X } from 'lucide-react';
 import OrderReceipt from './OrderReceipt';
+import { useRef } from 'react';
 
 // Removed TypeScript Product type
 
 const NewSaleModal = ({ isOpen, onClose, onSuccess }) => {
      const [customerId, setCustomerId] = useState('');
+     const [customers, setCustomers] = useState([]);
      const [products, setProducts] = useState([]);
      const [selectedProducts, setSelectedProducts] = useState([]);
      const [loading, setLoading] = useState(false);
      const [showReceipt, setShowReceipt] = useState(false);
      const [saleId, setSaleId] = useState(null);
      const [searchTerm, setSearchTerm] = useState('');
+     const receiptRef = useRef();
 
      useEffect(() => {
           fetchProducts();
+          fetchCustomers();
      }, []);
 
      const fetchProducts = async () => {
           try {
-               const { data } = await supabase
-                    .from('products')
-                    .select('*')
-                    .gt('quantity', 0)
-                    .order('name');
-
-               if (data) {
-                    setProducts(data);
-               }
+               const response = await fetch('http://localhost:5000/api/products');
+               const data = await response.json();
+               setProducts(data);
           } catch (error) {
                console.error('Error fetching products:', error);
+          }
+     };
+
+     const fetchCustomers = async () => {
+          try {
+               const response = await fetch('http://localhost:5000/api/customers');
+               const data = await response.json();
+               setCustomers(data);
+          } catch (error) {
+               console.error('Error fetching customers:', error);
           }
      };
 
@@ -89,63 +97,57 @@ const NewSaleModal = ({ isOpen, onClose, onSuccess }) => {
           try {
                setLoading(true);
 
-               const totalAmount = calculateTotal();
+               // Add validation
+               if (selectedProducts.length === 0) {
+                    throw new Error('Please select at least one product');
+               }
 
-               const { data: saleOrder, error: saleError } = await supabase
-                    .from('sales_orders')
-                    .insert({
-                         customer_id: customerId || 'WALK-IN',
-                         total_amount: totalAmount,
+               const items = selectedProducts.map(item => ({
+                    product_id: item.product.id,
+                    quantity: item.quantity,
+                    price: Number(item.product.price)
+               }));
+
+               const response = await fetch('http://localhost:5000/api/sales-orders', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                         customer_id: customerId ? Number(customerId) : null, // Ensure numeric ID
+                         items,
                          status: 'completed'
                     })
-                    .select()
-                    .single();
+               });
 
-               if (saleError) throw saleError;
+               const data = await response.json();
 
-               if (saleOrder) {
-                    await supabase
-                         .from('sales_items')
-                         .insert(
-                              selectedProducts.map(item => ({
-                                   sale_id: saleOrder.id,
-                                   product_id: item.product.id,
-                                   quantity: item.quantity,
-                                   price: item.product.price
-                              }))
-                         );
-
-                    for (const item of selectedProducts) {
-                         await supabase
-                              .from('products')
-                              .update({
-                                   quantity: item.product.quantity - item.quantity
-                              })
-                              .eq('id', item.product.id);
-                    }
-
-                    setSaleId(saleOrder.id);
-                    setShowReceipt(true);
-                    onSuccess();
+               // Handle server errors
+               if (!response.ok) {
+                    throw new Error(data.error || 'Failed to create sale');
                }
+
+               setSaleId(data.id);
+               setShowReceipt(true);
+               onSuccess();
           } catch (error) {
                console.error('Error creating sale:', error);
+               alert(`Error: ${error.message}`); // Show error to user
           } finally {
                setLoading(false);
           }
      };
-
      const filteredProducts = products.filter(product =>
           product.name.toLowerCase().includes(searchTerm.toLowerCase())
      );
 
      if (!isOpen) return null;
 
+     // In the receipt rendering section
      if (showReceipt && saleId) {
           return (
                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                     <div className="bg-white p-6 rounded-lg shadow-xl max-w-2xl w-full">
                          <OrderReceipt
+                              ref={receiptRef}
                               orderId={saleId}
                               items={selectedProducts.map(item => ({
                                    name: item.product.name,
@@ -155,6 +157,7 @@ const NewSaleModal = ({ isOpen, onClose, onSuccess }) => {
                               totalAmount={calculateTotal()}
                               date={new Date()}
                               type="sale"
+                              status="completed"
                          />
                          <div className="mt-4 flex justify-end">
                               <Button variant="primary" onClick={onClose}>
@@ -214,12 +217,22 @@ const NewSaleModal = ({ isOpen, onClose, onSuccess }) => {
 
                          {/* Right Side - Order Summary */}
                          <div className="space-y-4">
-                              <Input
-                                   label="Customer ID (Optional)"
-                                   value={customerId}
-                                   onChange={(e) => setCustomerId(e.target.value)}
-                                   placeholder="Enter customer ID or leave blank for walk-in"
-                              />
+                              <div className="space-y-2">
+                                   <label className="text-sm font-medium">Customer</label>
+                                   <select
+                                        value={customerId}
+                                        onChange={(e) => setCustomerId(e.target.value)}
+                                        className="w-full p-2 border rounded-md"
+                                   >
+                                        <option value="">Walk-in Customer</option>
+                                        {customers.map(customer => (
+                                             <option key={customer.id} value={customer.id}>
+                                                  {customer.name} (ID: {customer.id})
+                                             </option>
+                                        ))}
+                                   </select>
+                              </div>
+
 
                               <div className="border rounded-lg p-4">
                                    <h3 className="font-medium mb-4">Selected Items</h3>
