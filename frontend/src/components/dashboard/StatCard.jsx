@@ -1,13 +1,7 @@
 import React from 'react';
 import { Card, CardContent } from '../ui/card';
 
-const StatCard = ({
-     title,
-     value,
-     icon,
-     change,
-     className = ''
-}) => {
+const StatCard = ({ title, value, icon, change, className = '' }) => {
      return (
           <Card className={`overflow-hidden ${className}`}>
                <CardContent className="p-6">
@@ -15,7 +9,6 @@ const StatCard = ({
                          <div>
                               <p className="text-sm font-medium text-gray-500">{title}</p>
                               <h4 className="mt-2 text-2xl font-semibold text-gray-900">{value}</h4>
-
                               {change && (
                                    <p className={`mt-1 text-sm ${change.isPositive ? 'text-green-600' : 'text-red-600'}`}>
                                         {change.isPositive ? '↑' : '↓'} {Math.abs(change.value)}%
@@ -23,7 +16,6 @@ const StatCard = ({
                                    </p>
                               )}
                          </div>
-
                          <div className="p-2.5 rounded-full bg-indigo-50 text-indigo-600">
                               {icon}
                          </div>

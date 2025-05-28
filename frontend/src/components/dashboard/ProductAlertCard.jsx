@@ -1,32 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import Badge from '../ui/badge';
 
-const ProductAlertCard = () => {
-     const [products, setProducts] = useState([]);
-
-     useEffect(() => {
-          fetchLowStockProducts();
-     }, []);
-
-     const fetchLowStockProducts = async () => {
-          // Dummy static data simulating low stock and out-of-stock products
-          const data = [
-               { id: 1, name: 'Wireless Mouse', quantity: 5 },
-               { id: 2, name: 'USB-C Cable', quantity: 0 },
-               { id: 3, name: 'Laptop Stand', quantity: 8 },
-               { id: 4, name: 'Bluetooth Speaker', quantity: 2 },
-          ];
-
-          setProducts(
-               data.map(product => ({
-                    ...product,
-                    status: product.quantity === 0 ? 'out-of-stock' : 'low-stock'
-               }))
-          );
-     };
-
+const ProductAlertCard = ({ products }) => {
      return (
           <Card className="h-full">
                <CardHeader className="flex flex-row items-center justify-between">
