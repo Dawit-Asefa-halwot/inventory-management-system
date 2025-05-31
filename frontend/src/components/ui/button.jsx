@@ -8,7 +8,7 @@ const Button = React.forwardRef(({
      icon,
      className = '',
      ...props
-}, ref) => {  // Keep this as 'ref' - don't rename it
+}, ref) => {  // Correct ref parameter name
      const baseStyles =
           'inline-flex items-center justify-center font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none';
 
@@ -31,7 +31,7 @@ const Button = React.forwardRef(({
 
      return (
           <button
-               ref={ref}  // Use the standard ref name here
+               ref={ref}  // Correct ref usage
                className={styles}
                disabled={isLoading || props.disabled}
                {...props}

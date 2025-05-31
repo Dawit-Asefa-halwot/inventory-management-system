@@ -1,15 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Search, User, Settings, X, Sun, Moon } from 'lucide-react';
+import { Bell, User, Settings, X, Sun, Moon } from 'lucide-react';
 // import { signOut } from '../../lib/auth';
 // import { useAuth } from '../auth/AuthProvider';
 import { useTheme } from '../ThemeProvider';
-// import { supabase } from '../../lib/supabase';
+import io from 'socket.io-client';
 
-const Header = ({
-     userName,
-     userAvatar
-}) => {
+const Header = ({ userName, userAvatar }) => {
      const [isProfileOpen, setIsProfileOpen] = useState(false);
      const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
      const [notifications, setNotifications] = useState([]);
@@ -17,72 +14,63 @@ const Header = ({
      const navigate = useNavigate();
      // const { user } = useAuth();
      const { theme, toggleTheme } = useTheme();
+     const [socket, setSocket] = useState(null);
 
      useEffect(() => {
-          //     fetchNotifications();
-          //     // Subscribe to notifications
-          //     const channel = supabase
-          //       .channel('notifications')
-          //       .on('postgres_changes', {
-          //         event: '*',
-          //         schema: 'public',
-          //         table: 'notifications'
-          //       }, payload => {
-          //         fetchNotifications();
-          //       })
-          //       .subscribe();
+          // Initialize WebSocket connection
+          const newSocket = io('http://localhost:5000');
+          setSocket(newSocket);
 
-          //     return () => {
-          //       supabase.removeChannel(channel);
-          //     };
+          // Fetch initial notifications
+          fetchNotifications();
+
+          // Listen for new notifications
+          newSocket.on('new-notification', (notification) => {
+               setNotifications(prev => [notification, ...prev]);
+               setUnreadCount(prev => prev + 1);
+          });
+
+          return () => {
+               newSocket.disconnect();
+          };
      }, []);
 
-     //   const fetchNotifications = async () => {
-     //     try {
-     //       const { data } = await supabase
-     //         .from('notifications')
-     //         .select('*')
-     //         .order('created_at', { ascending: false })
-     //         .limit(10);
+     const fetchNotifications = async () => {
+          try {
+               const response = await fetch('http://localhost:5000/api/notifications');
+               const data = await response.json();
+               setNotifications(data);
+               setUnreadCount(data.filter(n => !n.read).length);
+          } catch (error) {
+               console.error('Error fetching notifications:', error);
+          }
+     };
 
-     //       if (data) {
-     //         const formattedNotifications = data.map(n => ({
-     //           ...n,
-     //           createdAt: new Date(n.created_at)
-     //         }));
-     //         setNotifications(formattedNotifications);
-     //         setUnreadCount(formattedNotifications.filter(n => !n.read).length);
-     //       }
-     //     } catch (error) {
-     //       console.error('Error fetching notifications:', error);
-     //     }
-     //   };
+     const markAsRead = async (id) => {
+          try {
+               await fetch(`http://localhost:5000/api/notifications/mark-read/${id}`, {
+                    method: 'POST'
+               });
+               setNotifications(prev =>
+                    prev.map(n => n.id === id ? { ...n, read: true } : n)
+               );
+               setUnreadCount(prev => prev - 1);
+          } catch (error) {
+               console.error('Error marking notification as read:', error);
+          }
+     };
 
-     //   const markAsRead = async (id) => {
-     //     try {
-     //       await supabase
-     //         .from('notifications')
-     //         .update({ read: true })
-     //         .eq('id', id);
-
-     //       await fetchNotifications();
-     //     } catch (error) {
-     //       console.error('Error marking notification as read:', error);
-     //     }
-     //   };
-
-     //   const markAllAsRead = async () => {
-     //     try {
-     //       await supabase
-     //         .from('notifications')
-     //         .update({ read: true })
-     //         .eq('read', false);
-
-     //       await fetchNotifications();
-     //     } catch (error) {
-     //       console.error('Error marking all notifications as read:', error);
-     //     }
-     //   };
+     const markAllAsRead = async () => {
+          try {
+               await fetch('http://localhost:5000/api/notifications/mark-all-read', {
+                    method: 'POST'
+               });
+               setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+               setUnreadCount(0);
+          } catch (error) {
+               console.error('Error marking all notifications as read:', error);
+          }
+     };
 
      const toggleProfile = () => {
           setIsProfileOpen(!isProfileOpen);
@@ -105,34 +93,48 @@ const Header = ({
 
      const getNotificationIcon = (type) => {
           switch (type) {
-               case 'warning':
-                    return '⚠️';
-               case 'success':
-                    return '✅';
-               case 'error':
-                    return '❌';
-               default:
-                    return 'ℹ️';
+               case 'low_stock': return '⚠️';
+               case 'purchase': return '📦';
+               case 'sale': return '💰';
+               case 'customer': return '👤';
+               case 'user': return '👥';
+               case 'supplier': return '🏭';
+               case 'category': return '📁';
+               case 'system': return '🖥️';
+               default: return 'ℹ️';
           }
      };
 
-     const formatTime = (date) => {
-          return new Intl.RelativeTimeFormat('en', { numeric: 'auto' }).format(
-               Math.ceil((date.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)),
-               'day'
-          );
+     const formatTime = (dateString) => {
+          const date = new Date(dateString);
+          const now = new Date();
+          const diffMs = now - date;
+          const diffSec = Math.floor(diffMs / 1000);
+          const diffMin = Math.floor(diffSec / 60);
+          const diffHrs = Math.floor(diffMin / 60);
+          const diffDays = Math.floor(diffHrs / 24);
+
+          if (diffSec < 60) return 'Just now';
+          if (diffMin < 60) return `${diffMin}m ago`;
+          if (diffHrs < 24) return `${diffHrs}h ago`;
+          if (diffDays < 7) return `${diffDays}d ago`;
+
+          return date.toLocaleDateString('en-US', {
+               month: 'short',
+               day: 'numeric'
+          });
      };
 
      return (
           <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 h-16">
                <div className="h-full px-4 flex items-center justify-between">
+
+
                     {/* Search Bar */}
-
                     <div className="relative max-w-xs w-full hidden sm:block">
-                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                              {/* <Search size={18} className="text-gray-400 dark:text-gray-500" /> */}
-                         </div>
-
+                         {/* <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                              <Search size={18} className="text-gray-400 dark:text-gray-500" />
+                         </div> */}
                          {/* <input
                               type="text"
                               placeholder="Search..."
@@ -193,7 +195,7 @@ const Header = ({
                                                             <div className="flex-1 min-w-0">
                                                                  <p className="text-sm text-gray-900 dark:text-gray-100">{notification.message}</p>
                                                                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                                                      {formatTime(notification.createdAt)}
+                                                                      {formatTime(notification.created_at)}
                                                                  </p>
                                                             </div>
                                                             {!notification.read && (
@@ -234,7 +236,7 @@ const Header = ({
                                         )}
                                    </div>
                                    <span className="text-sm font-medium text-gray-700 dark:text-gray-200 hidden md:block">
-                                        {/* {user?.email} */}
+                                        {userName}
                                    </span>
                               </button>
 
