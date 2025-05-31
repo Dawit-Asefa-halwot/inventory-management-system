@@ -9,19 +9,21 @@ import {
      Check,
      Clock,
      QrCode,
-     AlertCircle
+     AlertCircle,
+     Printer
 } from 'lucide-react';
 import Button from '../../components/ui/button';
 import Input from '../../components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
 import Badge from '../../components/ui/badge';
-// import { supabase } from '../../lib/supabase';
 import NewSaleModal from '../../components/orders/NewSaleModal';
 import QRScannerModal from '../../components/orders/QRScannerModal';
 import OrderReceipt from '../../components/orders/OrderReceipt';
+import { Dialog } from '@headlessui/react';
 
 const SalesPage = () => {
      const [searchTerm, setSearchTerm] = useState('');
+     const [saleToPrint, setSaleToPrint] = useState(null);
      const [sales, setSales] = useState([]);
      const [isNewSaleOpen, setIsNewSaleOpen] = useState(false);
      const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
@@ -34,9 +36,15 @@ const SalesPage = () => {
      const [showFilterMenu, setShowFilterMenu] = useState(false);
      const [showSortMenu, setShowSortMenu] = useState(false);
      const [filterOptions, setFilterOptions] = useState({
-          hasPhone: false,
-          hasAddress: false
+          completed: false,
+          pending: false,
+          cancelled: false
      });
+
+     // Pagination state
+     const [currentPage, setCurrentPage] = useState(1);
+     const [itemsPerPage] = useState(5);
+
      const fetchSales = async () => {
           try {
                setLoading(true);
@@ -57,30 +65,15 @@ const SalesPage = () => {
      const handleUpdateStatus = async (id, status) => {
           try {
                setError(null);
-               const { error: updateError } = await supabase
-                    .from('sales_orders')
-                    .update({ status })
-                    .eq('id', id);
+               const response = await fetch(`http://localhost:5000/api/sales-orders/${id}/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status })
+               });
 
-               if (updateError) throw updateError;
+               if (!response.ok) throw new Error('Update failed');
 
-               if (status === 'completed') {
-                    const sale = sales.find(s => s.id === id);
-                    if (sale?.items) {
-                         for (const item of sale.items) {
-                              const { error: productError } = await supabase
-                                   .from('products')
-                                   .update({
-                                        quantity: item.product.quantity - item.quantity
-                                   })
-                                   .eq('id', item.product.id);
-
-                              if (productError) throw productError;
-                         }
-                    }
-               }
-
-               await fetchSales();
+               fetchSales();
           } catch (error) {
                console.error('Error updating sale status:', error);
                setError('Failed to update sale status. Please try again.');
@@ -92,32 +85,21 @@ const SalesPage = () => {
           setIsReceiptOpen(true);
      };
 
-     const handleScanQR = async (qrCode) => {
-          try {
-               setError(null);
-               const { data: product, error } = await supabase
-                    .from('products')
-                    .select('*')
-                    .eq('qr_code', qrCode)
-                    .single();
+     {
+          isReceiptOpen && (
+               <Dialog open={isReceiptOpen} onClose={() => setIsReceiptOpen(false)}>
+                    <div className="fixed inset-0 bg-black/30" />
+                    <div className="fixed inset-0 flex items-center justify-center p-4">
+                         <Dialog.Panel className="w-full max-w-2xl bg-white rounded-lg">
+                              <OrderReceipt
+                              // ...props
+                              />
+                         </Dialog.Panel>
+                    </div>
+               </Dialog>
+          )
+     }
 
-               if (error) throw error;
-
-               if (product) {
-                    setIsQRScannerOpen(false);
-                    setIsNewSaleOpen(true);
-               }
-          } catch (error) {
-               console.error('Error scanning QR code:', error);
-               setError('Failed to scan product. Please try again.');
-          }
-     };
-
-     const filteredSales = sales.filter(sale =>
-          sale.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          sale.customer_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          sale.status.toLowerCase().includes(searchTerm.toLowerCase())
-     );
 
      const formatDate = (date) => {
           return new Intl.DateTimeFormat('en-US', {
@@ -147,6 +129,36 @@ const SalesPage = () => {
                setSortOrder('asc');
           }
           setShowSortMenu(false);
+     };
+
+     // Filter and sort sales
+     let filteredSales = sales.filter((sale) =>
+          String(sale?.id ?? '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+          String(sale?.customer_id ?? '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+          String(sale?.status ?? '').toLowerCase().includes(searchTerm.toLowerCase())
+     );
+
+
+     // Apply status filters
+     const statuses = [];
+     if (filterOptions.completed) statuses.push('completed');
+     if (filterOptions.pending) statuses.push('pending');
+     if (filterOptions.cancelled) statuses.push('cancelled');
+
+     if (statuses.length > 0) {
+          filteredSales = filteredSales.filter(sale => statuses.includes(sale.status));
+     }
+
+     // Pagination calculations
+     const totalPages = Math.ceil(filteredSales.length / itemsPerPage);
+     const indexOfLastItem = currentPage * itemsPerPage;
+     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+     const currentSales = filteredSales.slice(indexOfFirstItem, indexOfLastItem);
+
+     const handlePageChange = (newPage) => {
+          if (newPage > 0 && newPage <= totalPages) {
+               setCurrentPage(newPage);
+          }
      };
 
      return (
@@ -191,8 +203,6 @@ const SalesPage = () => {
                          />
                     </div>
 
-
-
                     <div className="relative">
                          <Button
                               variant="outline"
@@ -208,34 +218,43 @@ const SalesPage = () => {
                                         <label className="flex items-center gap-2">
                                              <input
                                                   type="checkbox"
-                                                  checked={filterOptions.hasPhone}
+                                                  checked={filterOptions.completed}
                                                   onChange={(e) => setFilterOptions({
                                                        ...filterOptions,
-                                                       hasPhone: e.target.checked
+                                                       completed: e.target.checked
                                                   })}
                                                   className="rounded border-gray-300"
                                              />
-                                             <span className="text-sm">Has Phone Number</span>
+                                             <span className="text-sm">Completed</span>
                                         </label>
                                         <label className="flex items-center gap-2">
                                              <input
                                                   type="checkbox"
-                                                  checked={filterOptions.hasAddress}
+                                                  checked={filterOptions.pending}
                                                   onChange={(e) => setFilterOptions({
                                                        ...filterOptions,
-                                                       hasAddress: e.target.checked
+                                                       pending: e.target.checked
                                                   })}
                                                   className="rounded border-gray-300"
                                              />
-                                             <span className="text-sm">Has Address</span>
+                                             <span className="text-sm">Pending</span>
+                                        </label>
+                                        <label className="flex items-center gap-2">
+                                             <input
+                                                  type="checkbox"
+                                                  checked={filterOptions.cancelled}
+                                                  onChange={(e) => setFilterOptions({
+                                                       ...filterOptions,
+                                                       cancelled: e.target.checked
+                                                  })}
+                                                  className="rounded border-gray-300"
+                                             />
+                                             <span className="text-sm">Cancelled</span>
                                         </label>
                                    </div>
                               </div>
                          )}
                     </div>
-
-
-
 
                     <div className="relative">
                          <Button
@@ -250,37 +269,34 @@ const SalesPage = () => {
                               <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden z-50">
                                    <button
                                         className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center justify-between"
-                                        onClick={() => handleSort('name')}
-                                   >
-                                        <span>Name</span>
-                                        {sortField === 'name' && (
-                                             <Check size={16} className="text-indigo-600" />
-                                        )}
-                                   </button>
-                                   <button
-                                        className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center justify-between"
-                                        onClick={() => handleSort('email')}
-                                   >
-                                        <span>Email</span>
-                                        {sortField === 'email' && (
-                                             <Check size={16} className="text-indigo-600" />
-                                        )}
-                                   </button>
-                                   <button
-                                        className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center justify-between"
                                         onClick={() => handleSort('created_at')}
                                    >
-                                        <span>Created Date</span>
+                                        <span>Date</span>
                                         {sortField === 'created_at' && (
+                                             <Check size={16} className="text-indigo-600" />
+                                        )}
+                                   </button>
+                                   <button
+                                        className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center justify-between"
+                                        onClick={() => handleSort('total_amount')}
+                                   >
+                                        <span>Total Amount</span>
+                                        {sortField === 'total_amount' && (
+                                             <Check size={16} className="text-indigo-600" />
+                                        )}
+                                   </button>
+                                   <button
+                                        className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center justify-between"
+                                        onClick={() => handleSort('status')}
+                                   >
+                                        <span>Status</span>
+                                        {sortField === 'status' && (
                                              <Check size={16} className="text-indigo-600" />
                                         )}
                                    </button>
                               </div>
                          )}
                     </div>
-
-
-
                </div>
 
                <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
@@ -303,8 +319,8 @@ const SalesPage = () => {
                                              Loading...
                                         </TableCell>
                                    </TableRow>
-                              ) : filteredSales.length > 0 ? (
-                                   filteredSales.map((sale) => (
+                              ) : currentSales.length > 0 ? (
+                                   currentSales.map((sale) => (
                                         <TableRow key={sale.id}>
                                              <TableCell className="font-medium text-gray-900">{sale.id}</TableCell>
                                              <TableCell>{formatDate(sale.created_at)}</TableCell>
@@ -362,6 +378,27 @@ const SalesPage = () => {
                     </Table>
                </div>
 
+               {/* Pagination Controls */}
+               {filteredSales.length > itemsPerPage && (
+                    <div className="flex justify-between items-center mt-4">
+                         <Button
+                              variant="outline"
+                              onClick={() => handlePageChange(currentPage - 1)}
+                              disabled={currentPage === 1}
+                         >
+                              Previous
+                         </Button>
+                         <span className="text-sm">Page {currentPage} of {totalPages}</span>
+                         <Button
+                              variant="outline"
+                              onClick={() => handlePageChange(currentPage + 1)}
+                              disabled={currentPage === totalPages}
+                         >
+                              Next
+                         </Button>
+                    </div>
+               )}
+
                <NewSaleModal
                     isOpen={isNewSaleOpen}
                     onClose={() => setIsNewSaleOpen(false)}
@@ -371,20 +408,23 @@ const SalesPage = () => {
                <QRScannerModal
                     isOpen={isQRScannerOpen}
                     onClose={() => setIsQRScannerOpen(false)}
-                    onScan={handleScanQR}
+                    onScan={(qrCode) => {
+                         console.log('Scanned QR code:', qrCode);
+                    }}
                />
 
                {selectedSale && (
                     <OrderReceipt
                          orderId={selectedSale.id}
                          items={selectedSale.items?.map(item => ({
-                              name: item.product.name,
+                              name: item.product?.name || 'Unknown Product', // Safe access
                               quantity: item.quantity,
                               price: item.price
                          })) || []}
                          totalAmount={selectedSale.total_amount}
                          date={new Date(selectedSale.created_at)}
                          type="sale"
+                         status={selectedSale.status} // Add this line
                     />
                )}
           </div>

@@ -1,56 +1,104 @@
 import React, { useRef } from 'react';
-import { useReactToPrint } from 'react-to-print';
-import { Printer } from 'lucide-react';
+import { Printer, Download } from 'lucide-react';
 import Badge from '../ui/badge';
 import Button from '../ui/button';
+import { useReactToPrint } from 'react-to-print';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 const OrderReceipt = React.forwardRef((props, ref) => {
      const { orderId, items, totalAmount, date, type, status } = props;
+     const componentRef = useRef();
 
-     // Use the forwarded ref or create a new one if not provided
-     const internalRef = useRef();
-     const receiptRef = ref || internalRef;
+     // Merge refs
+     React.useImperativeHandle(ref, () => componentRef.current);
+
 
      const handlePrint = useReactToPrint({
-          content: () => receiptRef.current,
+          content: () => componentRef.current,
           documentTitle: `${type}_receipt_${orderId}`,
-          onAfterPrint: () => console.log('Printed successfully!'),
+          onBeforeGetContent: () => {
+               document.body.classList.add('printing');
+               return Promise.resolve();
+          },
+          onAfterPrint: () => {
+               document.body.classList.remove('printing');
+          },
           removeAfterPrint: true,
           pageStyle: `
-      @page { size: auto; margin: 5mm; }
+      @page { 
+        size: auto; 
+        margin: 5mm; 
+      }
       @media print {
-        body { visibility: hidden; }
-        .print-container { visibility: visible; }
+        body { 
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        .print-container {
+          width: 100% !important;
+          max-width: 100% !important;
+          padding: 0 !important;
+          margin: 0 !important;
+          box-shadow: none !important;
+          border: none !important;
+        }
+        .no-print {
+          display: none !important;
+        }
       }
     `
      });
 
-     const printStyles = `
-    @media print {
-      body * { 
-        visibility: hidden;
-      }
-      .print-container, .print-container * {
-        visibility: visible;
-      }
-      .print-container {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-        padding: 20px;
-        font-size: 14px;
-      }
-      .no-print {
-        display: none !important;
-      }
-    }
-  `;
+     const handleDownloadPDF = () => {
+          const input = componentRef.current;
+
+          html2canvas(input, {
+               scale: 3, // Higher quality
+               useCORS: true,
+               allowTaint: true,
+               logging: false,
+               backgroundColor: "#FFFFFF"
+          }).then(canvas => {
+               const imgData = canvas.toDataURL('image/png');
+               const pdf = new jsPDF('p', 'mm', 'a4'); // A4 size
+
+               // Calculate dimensions with margins
+               const pageWidth = pdf.internal.pageSize.getWidth();
+               const pageHeight = pdf.internal.pageSize.getHeight();
+
+               // Add 10mm margins on left/right, 15mm top/bottom
+               const marginLeft = 10;
+               const marginRight = 10;
+               const marginTop = 15;
+               const marginBottom = 15;
+
+               // Content area dimensions
+               const contentWidth = pageWidth - marginLeft - marginRight;
+               const contentHeight = pageHeight - marginTop - marginBottom;
+
+               // Calculate image dimensions to fit content area
+               const imgWidth = contentWidth;
+               const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+               // Add image with proper margins
+               pdf.addImage(
+                    imgData,
+                    'PNG',
+                    marginLeft,
+                    marginTop,
+                    imgWidth,
+                    imgHeight
+               );
+
+               // Save PDF automatically
+               pdf.save(`${type}_receipt_${orderId}.pdf`);
+          });
+     };
 
      return (
           <div className="p-6 bg-white rounded-lg">
-               <style>{printStyles}</style>
-               <div ref={receiptRef} className="print-container">
+               <div ref={componentRef} className="print-container">
                     {/* Receipt Header */}
                     <div className="mb-4 text-center">
                          <h2 className="text-2xl font-bold mb-2">
@@ -59,7 +107,7 @@ const OrderReceipt = React.forwardRef((props, ref) => {
                          <div className="flex justify-center items-center gap-2 mb-2">
                               <p className="text-sm">Order ID: {orderId}</p>
                               <Badge variant={status === 'completed' ? 'success' : 'warning'}>
-                                   {status.toUpperCase()}
+                                   {status?.toUpperCase() || ''} {/* Fixed */}
                               </Badge>
                          </div>
                          <p className="text-sm text-gray-600">
@@ -84,19 +132,25 @@ const OrderReceipt = React.forwardRef((props, ref) => {
                               </tr>
                          </thead>
                          <tbody>
-                              {items.map((item, index) => (
+                              {items?.map((item, index) => ( // Safe access
                                    <tr key={index} className="border-b">
                                         <td className="py-2">{item.name}</td>
                                         <td className="text-right py-2">{item.quantity}</td>
-                                        <td className="text-right py-2">${item.price.toFixed(2)}</td>
-                                        <td className="text-right py-2">${(item.quantity * item.price).toFixed(2)}</td>
+                                        <td className="text-right py-2">${item.price?.toFixed(2)}</td>
+                                        <td className="text-right py-2">${(item.quantity * item.price)?.toFixed(2)}</td>
                                    </tr>
-                              ))}
+                              )) || ( // Fallback for empty items
+                                        <tr>
+                                             <td colSpan={4} className="text-center py-4">
+                                                  No items found
+                                             </td>
+                                        </tr>
+                                   )}
                          </tbody>
                          <tfoot>
                               <tr className="font-bold">
                                    <td colSpan={3} className="text-right py-2">Total:</td>
-                                   <td className="text-right py-2">${totalAmount.toFixed(2)}</td>
+                                   <td className="text-right py-2">${totalAmount?.toFixed(2)}</td>
                               </tr>
                          </tfoot>
                     </table>
@@ -105,22 +159,26 @@ const OrderReceipt = React.forwardRef((props, ref) => {
                     <div className="mt-8 pt-4 border-t">
                          <p className="text-sm text-gray-600">Thank you for your business!</p>
                          <p className="text-xs text-gray-500 mt-2">
-                              For any inquiries, please contact support@example.com
+                              For any inquiries, please contact support@david.com
                          </p>
                     </div>
                </div>
 
-               {/* Print Button */}
-               <div className="mt-4 flex justify-end no-print">
+               {/* Print and Download Buttons */}
+               <div className="mt-4 flex justify-end no-print gap-2">
                     <Button
-                         variant="primary"
-                         onClick={() => {
-                              console.log('Print button clicked, ref:', receiptRef.current);
-                              setTimeout(handlePrint, 100); // Small delay to ensure ref is available
-                         }}
+                         variant="outline"
+                         onClick={handlePrint}
                          icon={<Printer size={16} />}
                     >
-                         Print Receipt
+                         Print
+                    </Button>
+                    <Button
+                         variant="primary"
+                         onClick={handleDownloadPDF}
+                         icon={<Download size={16} />}
+                    >
+                         Download PDF
                     </Button>
                </div>
           </div>
