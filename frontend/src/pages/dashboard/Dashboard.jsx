@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { LayoutDashboard, Package, ShoppingBag, Users, Truck, DollarSign } from 'lucide-react';
 
-import StatCard from '../../components/dashboard/StatCard';
-import RecentActivityCard from '../../components/dashboard/RecentActivityCard';
-import ProductAlertCard from '../../components/dashboard/ProductAlertCard';
 
-import { RevenueChart, ProductDistributionChart } from '../../components/dashboard/DashboardCharts';
+import StatCard from './components//StatCard';
+import RecentActivityCard from './components/RecentActivityCard';
+import ProductAlertCard from './components/ProductAlertCard';
+
+import RevenueChart from './components/RevenueChart';
+import ProductDistributionChart from './components/ProductDistributionChart';
 import { io } from 'socket.io-client';
 
 const DashboardPage = () => {

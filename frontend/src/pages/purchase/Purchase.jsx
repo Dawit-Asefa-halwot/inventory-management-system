@@ -1,29 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import {
-     Plus,
-     Search,
-     Filter,
-     ArrowUpDown,
-     Eye,
-     ShoppingCart,
-     CreditCard,
-     Check,
-     Clock,
-     QrCode
-} from 'lucide-react';
+import { Plus, ShoppingCart } from 'lucide-react';
 import Button from '../../components/ui/button';
-import Input from '../../components/ui/input';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
-import Badge from '../../components/ui/badge';
-// import { supabase } from '../lib/supabase';
 import NewPurchaseModal from '../../components/orders/NewPurchaseModal';
 import QRScannerModal from '../../components/orders/QRScannerModal';
-
+import QRDisplayModal from '../../components/orders/QRDisplayModal';
+import PurchaseDetailModal from '../../components/orders/PurchaseDetailModal';
+import SearchFilterBar from './components/SearchFilterBar';
+import PurchasesTable from './components/PurchaseTable';
 const PurchasesPage = () => {
+     const [isDetailOpen, setIsDetailOpen] = useState(false);
+     const [selectedPurchase, setSelectedPurchase] = useState(null);
      const [searchTerm, setSearchTerm] = useState('');
      const [purchases, setPurchases] = useState([]);
      const [isNewPurchaseOpen, setIsNewPurchaseOpen] = useState(false);
      const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
+     const [isQRDisplayOpen, setIsQRDisplayOpen] = useState(false);
+     const [selectedPurchaseId, setSelectedPurchaseId] = useState(null);
      const [loading, setLoading] = useState(true);
 
      const [sortField, setSortField] = useState('name');
@@ -35,8 +27,6 @@ const PurchasesPage = () => {
           hasAddress: false
      });
 
-
-     // Update fetchPurchases in PurchasesPage.jsx
      const fetchPurchases = async () => {
           try {
                const response = await fetch(
@@ -44,7 +34,6 @@ const PurchasesPage = () => {
                );
 
                if (!response.ok) throw new Error('Failed to fetch purchases');
-
                const data = await response.json();
                setPurchases(data);
           } catch (error) {
@@ -63,26 +52,6 @@ const PurchasesPage = () => {
           purchase.id.toString().includes(searchTerm.toLowerCase()) ||
           (purchase.supplier?.name?.toLowerCase()?.includes(searchTerm.toLowerCase()))
      );
-
-     const formatDate = (date) => {
-          return new Intl.DateTimeFormat('en-US', {
-               dateStyle: 'medium',
-               timeStyle: 'short'
-          }).format(new Date(date));
-     };
-
-     const getStatusBadge = (status) => {
-          switch (status) {
-               case 'completed':
-                    return <Badge variant="success" className="flex items-center gap-1"><Check size={12} /> {status}</Badge>;
-               case 'pending':
-                    return <Badge variant="warning" className="flex items-center gap-1"><Clock size={12} /> {status}</Badge>;
-               case 'cancelled':
-                    return <Badge variant="danger">{status}</Badge>;
-               default:
-                    return <Badge>{status}</Badge>;
-          }
-     };
 
      const handleUpdateStatus = async (id, status) => {
           try {
@@ -113,16 +82,7 @@ const PurchasesPage = () => {
           <div className="space-y-6">
                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <h1 className="text-2xl font-bold text-gray-900">Purchases</h1>
-
                     <div className="flex gap-2">
-                         <Button
-                              variant="outline"
-                              size="md"
-                              icon={<QrCode size={16} />}
-                              onClick={() => setIsQRScannerOpen(true)}
-                         >
-                              Scan QR Code
-                         </Button>
                          <Button
                               variant="primary"
                               size="md"
@@ -134,188 +94,28 @@ const PurchasesPage = () => {
                     </div>
                </div>
 
-               <div className="flex flex-col sm:flex-row gap-4">
-                    <div className="relative flex-1">
-                         <Input
-                              placeholder="Search by PO number, supplier..."
-                              icon={<Search size={18} className="text-gray-400" />}
-                              value={searchTerm}
-                              onChange={(e) => setSearchTerm(e.target.value)}
-                              className="w-full"
-                         />
-                    </div>
+               <SearchFilterBar
+                    searchTerm={searchTerm}
+                    setSearchTerm={setSearchTerm}
+                    showFilterMenu={showFilterMenu}
+                    setShowFilterMenu={setShowFilterMenu}
+                    showSortMenu={showSortMenu}
+                    setShowSortMenu={setShowSortMenu}
+                    filterOptions={filterOptions}
+                    setFilterOptions={setFilterOptions}
+                    sortField={sortField}
+                    handleSort={handleSort}
+               />
 
-
-
-
-
-                    <div className="relative">
-                         <Button
-                              variant="outline"
-                              icon={<Filter size={16} />}
-                              onClick={() => setShowFilterMenu(!showFilterMenu)}
-                         >
-                              Filter
-                         </Button>
-
-                         {showFilterMenu && (
-                              <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 p-4 z-50">
-                                   <div className="space-y-4">
-                                        <label className="flex items-center gap-2">
-                                             <input
-                                                  type="checkbox"
-                                                  checked={filterOptions.hasPhone}
-                                                  onChange={(e) => setFilterOptions({
-                                                       ...filterOptions,
-                                                       hasPhone: e.target.checked
-                                                  })}
-                                                  className="rounded border-gray-300"
-                                             />
-                                             <span className="text-sm">Has Phone Number</span>
-                                        </label>
-                                        <label className="flex items-center gap-2">
-                                             <input
-                                                  type="checkbox"
-                                                  checked={filterOptions.hasAddress}
-                                                  onChange={(e) => setFilterOptions({
-                                                       ...filterOptions,
-                                                       hasAddress: e.target.checked
-                                                  })}
-                                                  className="rounded border-gray-300"
-                                             />
-                                             <span className="text-sm">Has Address</span>
-                                        </label>
-                                   </div>
-                              </div>
-                         )}
-                    </div>
-
-
-
-
-
-                    <div className="relative">
-                         <Button
-                              variant="outline"
-                              icon={<ArrowUpDown size={16} />}
-                              onClick={() => setShowSortMenu(!showSortMenu)}
-                         >
-                              Sort
-                         </Button>
-
-                         {showSortMenu && (
-                              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden z-50">
-                                   <button
-                                        className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center justify-between"
-                                        onClick={() => handleSort('name')}
-                                   >
-                                        <span>Name</span>
-                                        {sortField === 'name' && (
-                                             <Check size={16} className="text-indigo-600" />
-                                        )}
-                                   </button>
-                                   <button
-                                        className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center justify-between"
-                                        onClick={() => handleSort('email')}
-                                   >
-                                        <span>Email</span>
-                                        {sortField === 'email' && (
-                                             <Check size={16} className="text-indigo-600" />
-                                        )}
-                                   </button>
-                                   <button
-                                        className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center justify-between"
-                                        onClick={() => handleSort('created_at')}
-                                   >
-                                        <span>Created Date</span>
-                                        {sortField === 'created_at' && (
-                                             <Check size={16} className="text-indigo-600" />
-                                        )}
-                                   </button>
-                              </div>
-                         )}
-                    </div>
-
-
-
-
-               </div>
-
-               <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-                    <Table>
-                         <TableHeader>
-                              <TableRow>
-                                   <TableHead>Purchase Order</TableHead>
-                                   <TableHead>Date & Time</TableHead>
-                                   <TableHead>Supplier</TableHead>
-                                   <TableHead>Total Amount</TableHead>
-                                   <TableHead>Status</TableHead>
-                                   <TableHead className="text-right">Actions</TableHead>
-                              </TableRow>
-                         </TableHeader>
-
-                         <TableBody>
-                              {loading ? (
-                                   <TableRow>
-                                        <TableCell colSpan={6} className="text-center py-8">
-                                             Loading...
-                                        </TableCell>
-                                   </TableRow>
-                              ) : filteredPurchases.length > 0 ? (
-                                   filteredPurchases.map((purchase) => (
-                                        <TableRow key={purchase.id}>
-                                             <TableCell className="font-medium text-gray-900">{purchase.id}</TableCell>
-                                             <TableCell>{formatDate(purchase.created_at)}</TableCell>
-                                             <TableCell>{purchase.supplier?.name || `Supplier #${purchase.supplier_id}`}</TableCell>
-                                             <TableCell className="font-medium">${Number(purchase.total_amount).toFixed(2)}</TableCell>
-                                             <TableCell>{getStatusBadge(purchase.status)}</TableCell>
-                                             <TableCell className="text-right">
-                                                  <div className="flex justify-end gap-2">
-                                                       {purchase.status === 'pending' && (
-                                                            <>
-                                                                 <Button
-                                                                      variant="ghost"
-                                                                      size="sm"
-                                                                      icon={<Check size={16} />}
-                                                                      onClick={() => handleUpdateStatus(purchase.id, 'completed')}
-                                                                 >
-                                                                      Complete
-                                                                 </Button>
-                                                                 <Button
-                                                                      variant="ghost"
-                                                                      size="sm"
-                                                                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                                                      onClick={() => handleUpdateStatus(purchase.id, 'cancelled')}
-                                                                 >
-                                                                      Reject
-                                                                 </Button>
-                                                            </>
-                                                       )}
-                                                       <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            icon={<Eye size={16} />}
-                                                       >
-                                                            View
-                                                       </Button>
-                                                  </div>
-                                             </TableCell>
-                                        </TableRow>
-                                   ))
-                              ) : (
-                                   <TableRow>
-                                        <TableCell colSpan={6} className="h-32 text-center">
-                                             <div className="flex flex-col items-center justify-center text-gray-500">
-                                                  <ShoppingCart size={28} className="mb-2" />
-                                                  <h3 className="text-lg font-medium">No purchase orders found</h3>
-                                                  <p className="text-sm">Try adjusting your search or filters</p>
-                                             </div>
-                                        </TableCell>
-                                   </TableRow>
-                              )}
-                         </TableBody>
-                    </Table>
-               </div>
+               <PurchasesTable
+                    purchases={filteredPurchases}
+                    loading={loading}
+                    onViewDetails={(purchase) => {
+                         setSelectedPurchase(purchase);
+                         setIsDetailOpen(true);
+                    }}
+                    onUpdateStatus={handleUpdateStatus}
+               />
 
                <NewPurchaseModal
                     isOpen={isNewPurchaseOpen}
@@ -326,9 +126,19 @@ const PurchasesPage = () => {
                <QRScannerModal
                     isOpen={isQRScannerOpen}
                     onClose={() => setIsQRScannerOpen(false)}
-                    onScan={(qrCode) => {
-                         console.log('Scanned QR code:', qrCode);
-                    }}
+                    onScan={(qrCode) => setSearchTerm(qrCode.toString())}
+               />
+
+               <QRDisplayModal
+                    isOpen={isQRDisplayOpen}
+                    onClose={() => setIsQRDisplayOpen(false)}
+                    purchaseOrderId={selectedPurchaseId}
+               />
+
+               <PurchaseDetailModal
+                    isOpen={isDetailOpen}
+                    onClose={() => setIsDetailOpen(false)}
+                    purchase={selectedPurchase}
                />
           </div>
      );

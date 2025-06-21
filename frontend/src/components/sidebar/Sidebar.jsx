@@ -123,7 +123,7 @@ const Sidebar = ({ userRole }) => {
                          <div className="flex items-center gap-2">
                               <Package size={24} className="text-indigo-600" />
                               <h1 className="text-xl font-bold text-gray-900">
-                                   {userRole === 'admin' ? 'Admin Portal' : 'Staff Portal'}
+                                   {userRole === 'admin' ? 'Admin Portal' : 'Admin Portal'}
                               </h1>
                          </div>
                     </div>

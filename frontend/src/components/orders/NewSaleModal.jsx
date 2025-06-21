@@ -9,7 +9,7 @@ import { useRef } from 'react';
 // Removed TypeScript Product type
 
 const NewSaleModal = ({ isOpen, onClose, onSuccess }) => {
-     const [customerId, setCustomerId] = useState('');
+     const [customer_id, setCustomerId] = useState('');
      const [customers, setCustomers] = useState([]);
      const [products, setProducts] = useState([]);
      const [selectedProducts, setSelectedProducts] = useState([]);
@@ -44,24 +44,26 @@ const NewSaleModal = ({ isOpen, onClose, onSuccess }) => {
           }
      };
 
+     // Update handleAddProduct
      const handleAddProduct = (product) => {
-          if (product.quantity === 0) {
-               return;
-          }
-
           const existing = selectedProducts.find(p => p.product.id === product.id);
+          const availableQty = product.quantity - (existing ? existing.quantity : 0);
+
+          if (availableQty <= 0) return;
+
           if (existing) {
-               if (existing.quantity < product.quantity) {
-                    setSelectedProducts(prev =>
-                         prev.map(p =>
-                              p.product.id === product.id
-                                   ? { ...p, quantity: p.quantity + 1 }
-                                   : p
-                         )
-                    );
-               }
+               setSelectedProducts(prev =>
+                    prev.map(p =>
+                         p.product.id === product.id
+                              ? { ...p, quantity: p.quantity + 1 }
+                              : p
+                    )
+               );
           } else {
-               setSelectedProducts(prev => [...prev, { product, quantity: 1 }]);
+               setSelectedProducts(prev => [...prev, {
+                    product,
+                    quantity: 1
+               }]);
           }
      };
 
@@ -97,30 +99,31 @@ const NewSaleModal = ({ isOpen, onClose, onSuccess }) => {
           try {
                setLoading(true);
 
-               // Add validation
                if (selectedProducts.length === 0) {
                     throw new Error('Please select at least one product');
                }
 
+               // Prepare items with correct structure
                const items = selectedProducts.map(item => ({
-                    product_id: item.product.id,
+                    product_id: item.product.id,  // Int ID
                     quantity: item.quantity,
-                    price: Number(item.product.price)
+                    price: item.product.price
                }));
+
+               const totalAmount = calculateTotal();
 
                const response = await fetch('http://localhost:5000/api/sales-orders', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                         customer_id: customerId ? Number(customerId) : null, // Ensure numeric ID
+                         customer_id: customer_id ? parseInt(customer_id) : undefined, // Parse to Int
                          items,
-                         status: 'completed'
+                         total_amount: totalAmount
                     })
                });
 
                const data = await response.json();
 
-               // Handle server errors
                if (!response.ok) {
                     throw new Error(data.error || 'Failed to create sale');
                }
@@ -130,7 +133,7 @@ const NewSaleModal = ({ isOpen, onClose, onSuccess }) => {
                onSuccess();
           } catch (error) {
                console.error('Error creating sale:', error);
-               alert(`Error: ${error.message}`); // Show error to user
+               alert(`Error: ${error.message}`);
           } finally {
                setLoading(false);
           }
@@ -220,7 +223,7 @@ const NewSaleModal = ({ isOpen, onClose, onSuccess }) => {
                               <div className="space-y-2">
                                    <label className="text-sm font-medium">Customer</label>
                                    <select
-                                        value={customerId}
+                                        value={customer_id}
                                         onChange={(e) => setCustomerId(e.target.value)}
                                         className="w-full p-2 border rounded-md"
                                    >
