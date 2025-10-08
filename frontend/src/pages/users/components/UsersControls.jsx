@@ -74,6 +74,7 @@ const UsersControls = ({
                                              <option value="">All Status</option>
                                              <option value="active">Active</option>
                                              <option value="inactive">Inactive</option>
+                                             <option value="suspended">Suspended</option>
                                         </select>
                                    </div>
                               </div>

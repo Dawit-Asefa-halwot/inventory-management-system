@@ -38,7 +38,7 @@ const RecentActivityCard = ({ activities }) => {
                                                   {activity.relatedEntity?.name || 'Anonymous'}
                                              </p>
                                              <p className="text-xs text-gray-500 mt-0.5">
-                                                  {formatTime(activity.date)} - ${activity.amount.toFixed(2)}
+                                                  {formatTime(activity.date)} - ${activity.amount ? activity.amount.toFixed(2) : '0.00'}
                                              </p>
                                         </div>
                                    </div>

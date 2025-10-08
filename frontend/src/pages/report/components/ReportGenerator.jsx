@@ -4,7 +4,7 @@ import autoTable from 'jspdf-autotable';
 
 const reportConfigs = {
      'daily-sales': {
-          endpoint: 'http://localhost:5000/api/sales-orders',
+          endpoint: 'http://localhost:5000/api/reports/daily-sales',
           columns: ['Date', 'Order ID', 'Customer', 'Amount', 'Status'],
           title: 'Daily Sales Report'
      },

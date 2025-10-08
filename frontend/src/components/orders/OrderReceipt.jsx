@@ -136,8 +136,8 @@ const OrderReceipt = React.forwardRef((props, ref) => {
                                    <tr key={index} className="border-b">
                                         <td className="py-2">{item.name}</td>
                                         <td className="text-right py-2">{item.quantity}</td>
-                                        <td className="text-right py-2">${item.price?.toFixed(2)}</td>
-                                        <td className="text-right py-2">${(item.quantity * item.price)?.toFixed(2)}</td>
+                                        <td className="text-right py-2">${Number(item.price).toFixed(2)}</td>
+                                        <td className="text-right py-2">${(item.quantity * Number(item.price)).toFixed(2)}</td>
                                    </tr>
                               )) || ( // Fallback for empty items
                                         <tr>
@@ -150,7 +150,7 @@ const OrderReceipt = React.forwardRef((props, ref) => {
                          <tfoot>
                               <tr className="font-bold">
                                    <td colSpan={3} className="text-right py-2">Total:</td>
-                                   <td className="text-right py-2">${totalAmount?.toFixed(2)}</td>
+                                   <td className="text-right py-2">${Number(totalAmount).toFixed(2)}</td>
                               </tr>
                          </tfoot>
                     </table>

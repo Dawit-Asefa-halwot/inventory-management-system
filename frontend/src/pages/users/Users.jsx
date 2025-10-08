@@ -3,7 +3,7 @@ import NewUserModal from '../../components/modals/NewUserModal';
 import UsersHeader from './components/UsersHeader';
 import UsersControls from './components/UsersControls';
 import UsersTable from './components/UsersTable';
-
+import { BASE_URL } from '../../config';
 const UsersPage = () => {
      const [users, setUsers] = useState([]);
      const [loading, setLoading] = useState(true);
@@ -17,11 +17,16 @@ const UsersPage = () => {
           status: ''
      });
      const [error, setError] = useState(null);
+     const [notification, setNotification] = useState(null);
 
      const fetchUsers = async () => {
           try {
                setLoading(true);
-               const response = await fetch('http://localhost:5000/api/users');
+
+               const response = await fetch(`${BASE_URL}/api/users`, {
+                    credentials: 'include',
+               });
+
 
                if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
@@ -50,10 +55,15 @@ const UsersPage = () => {
           }
      };
 
+     const showNotification = (msg) => {
+          setNotification(msg);
+          setTimeout(() => setNotification(null), 4000);
+     };
+
      const handleDelete = async (id) => {
           try {
-               const response = await fetch(`http://localhost:5000/api/users/${id}`, {
-                    method: 'DELETE'
+               const response = await fetch(`${BASE_URL}/api/users/${id}`, {
+                    method: 'DELETE',
                });
 
                if (!response.ok) {
@@ -61,10 +71,21 @@ const UsersPage = () => {
                }
 
                fetchUsers();
+               showNotification('User deleted successfully');
           } catch (error) {
                console.error('Delete error:', error);
                setError(error.message);
           }
+     };
+
+     const handleStatusChange = (userId, newStatus) => {
+          setUsers(prevUsers =>
+               prevUsers.map(user =>
+                    user.id === userId
+                         ? { ...user, status: newStatus }
+                         : user
+               )
+          );
      };
 
      const filteredUsers = users
@@ -102,6 +123,12 @@ const UsersPage = () => {
                     : aValue > bValue ? -1 : 1;
           });
 
+     // Pass showNotification to NewUserModal for add/edit
+     const handleModalSuccess = () => {
+          fetchUsers();
+          showNotification(editingUser ? 'User updated successfully' : 'User added successfully');
+     };
+
      return (
           <div className="space-y-6">
                <UsersHeader
@@ -110,6 +137,13 @@ const UsersPage = () => {
                          setIsNewUserModalOpen(true);
                     }}
                />
+
+               {/* Notification message */}
+               {notification && (
+                    <div className="bg-green-100 text-green-800 px-4 py-2 rounded mb-2 text-center font-medium transition-all duration-300">
+                         {notification}
+                    </div>
+               )}
 
                <UsersControls
                     searchTerm={searchTerm}
@@ -128,6 +162,7 @@ const UsersPage = () => {
                          setIsNewUserModalOpen(true);
                     }}
                     onDelete={handleDelete}
+                    onStatusChange={handleStatusChange}
                />
 
                <NewUserModal
@@ -136,9 +171,10 @@ const UsersPage = () => {
                          setIsNewUserModalOpen(false);
                          setEditingUser(null);
                     }}
-                    onSuccess={fetchUsers}
+                    onSuccess={handleModalSuccess}
                     editingUser={editingUser}
                />
+
           </div>
      );
 };

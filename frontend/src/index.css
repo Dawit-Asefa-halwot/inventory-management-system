@@ -6,8 +6,8 @@
      :root {
           --background: #ffffff;
           --background-secondary: #f9fafb;
-          --text: #111827;
-          --text-secondary: #4b5563;
+          --text: #fff;
+          --text-secondary: #fff;
      }
 
      .dark {
@@ -25,6 +25,11 @@
 /* Global dark mode styles */
 .dark {
      color-scheme: dark;
+}
+
+.dark body {
+     color: #f3f4f6;
+     /* Tailwind's gray-100/200 or use #fff for white */
 }
 
 /* Background colors */
@@ -45,32 +50,32 @@
 
 /* Text colors */
 .dark .text-gray-900 {
-     color: #f3f4f6;
+     color: #d9d9d9;
      /* gray-100 */
 }
 
 .dark .text-gray-800 {
-     color: #e5e7eb;
+     color: #d9d9d9;
      /* gray-200 */
 }
 
 .dark .text-gray-700 {
-     color: #d1d5db;
+     color: #d9d9d9;
      /* gray-300 */
 }
 
 .dark .text-gray-600 {
-     color: #9ca3af;
+     color: #d9d9d9;
      /* gray-400 */
 }
 
 .dark .text-gray-500 {
-     color: #6b7280;
+     color: #d9d9d9;
      /* gray-500 */
 }
 
 .dark .text-gray-400 {
-     color: #4b5563;
+     color: #d9d9d9;
      /* gray-600 */
 }
 

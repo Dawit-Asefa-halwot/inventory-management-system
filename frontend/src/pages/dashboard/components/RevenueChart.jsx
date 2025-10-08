@@ -71,6 +71,8 @@ const RevenueChart = () => {
           return () => socket.disconnect();
      }, []);
 
+
+
      const domainOptions = {
           plugins: {
                legend: {

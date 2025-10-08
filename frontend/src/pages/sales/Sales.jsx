@@ -35,11 +35,18 @@ const SalesPage = () => {
      const fetchSales = async () => {
           try {
                setLoading(true);
-               const response = await fetch('/api/sales-orders');
-               if (!response.ok) throw new Error('Failed to fetch sales');
+               const response = await fetch('http://localhost:5000/api/sales-orders');
+
+               if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Failed to fetch sales: ${response.status} - ${errorText}`);
+               }
+
                const data = await response.json();
+               console.log('Sales data:', data); // Log fetched data
                setSales(data);
           } catch (error) {
+               console.error('Fetch error:', error);
                setError('Failed to load sales data');
           } finally {
                setLoading(false);
@@ -53,7 +60,7 @@ const SalesPage = () => {
      const handleUpdateStatus = async (id, status) => {
           try {
                setError(null);
-               const response = await fetch(`/api/sales-orders/${id}/status`, {
+               const response = await fetch(`http://localhost:5000/api/sales-orders/${id}/status`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ status })
@@ -116,14 +123,14 @@ const SalesPage = () => {
                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <h1 className="text-2xl font-bold text-gray-900">Sales</h1>
                     <div className="flex gap-2">
-                         <Button
+                         {/* <Button
                               variant="outline"
                               size="md"
                               icon={<QrCode size={16} />}
                               onClick={() => setIsQRScannerOpen(true)}
                          >
                               Scan QR Code
-                         </Button>
+                         </Button> */}
                          <Button
                               variant="primary"
                               size="md"
@@ -176,13 +183,7 @@ const SalesPage = () => {
                     onSuccess={fetchSales}
                />
 
-               <QRScannerModal
-                    isOpen={isQRScannerOpen}
-                    onClose={() => setIsQRScannerOpen(false)}
-                    onScan={(qrCode) => {
-                         console.log('Scanned QR code:', qrCode);
-                    }}
-               />
+
 
                {isReceiptOpen && selectedSale && (
                     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">

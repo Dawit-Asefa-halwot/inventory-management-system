@@ -3,6 +3,7 @@ import NewSupplierModal from '../../components/modals/NewSupplierModal';
 import SuppliersHeader from './components/SuppliersHeader';
 import SuppliersControls from './components/SuppliersControls';
 import SuppliersTable from './components/SuppliersTable';
+import { BASE_URL } from '../../config';
 
 const SuppliersPage = () => {
      const [searchTerm, setSearchTerm] = useState('');
@@ -17,11 +18,17 @@ const SuppliersPage = () => {
           hasAddress: false
      });
      const [error, setError] = useState(null);
+     const [notification, setNotification] = useState(null);
+
+     const showNotification = (msg) => {
+          setNotification(msg);
+          setTimeout(() => setNotification(null), 4000);
+     };
 
      const fetchSuppliers = async () => {
           try {
                setLoading(true);
-               const response = await fetch('http://localhost:5000/api/suppliers');
+               const response = await fetch(`${BASE_URL}/api/suppliers`);
 
                if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
@@ -43,15 +50,17 @@ const SuppliersPage = () => {
 
      const handleDeleteSupplier = async (id) => {
           try {
-               const response = await fetch(`http://localhost:5000/api/suppliers/${id}`, {
+               const response = await fetch(`${BASE_URL}/api/suppliers/${id}`, {
                     method: 'DELETE'
                });
+
 
                if (!response.ok) {
                     throw new Error('Failed to delete supplier');
                }
 
                fetchSuppliers();
+               showNotification('Supplier deleted successfully');
           } catch (error) {
                console.error('Delete error:', error);
                setError(error.message);
@@ -97,6 +106,16 @@ const SuppliersPage = () => {
                }
           });
 
+     // Pass showNotification to NewSupplierModal for add/edit
+     const handleModalSuccess = (action) => {
+          fetchSuppliers();
+          showNotification(
+               action === 'edit'
+                    ? 'Supplier updated successfully'
+                    : 'Supplier added successfully'
+          );
+     };
+
      return (
           <div className="space-y-6">
                <SuppliersHeader
@@ -115,6 +134,13 @@ const SuppliersPage = () => {
                     onSort={handleSort}
                />
 
+               {/* Notification message */}
+               {notification && (
+                    <div className="bg-green-100 text-green-800 px-4 py-2 rounded mb-2 text-center font-medium transition-all duration-300">
+                         {notification}
+                    </div>
+               )}
+
                <SuppliersTable
                     loading={loading}
                     suppliers={filteredSuppliers}
@@ -131,7 +157,7 @@ const SuppliersPage = () => {
                          setIsNewSupplierOpen(false);
                          setEditingSupplier(null);
                     }}
-                    onSuccess={fetchSuppliers}
+                    onSuccess={() => handleModalSuccess(editingSupplier ? 'edit' : 'add')}
                     editingSupplier={editingSupplier}
                />
           </div>

@@ -3,6 +3,7 @@ import NewCustomerModal from '../../components/modals/NewCustomerModal';
 import CustomersHeader from './components/CustomersHeader';
 import CustomersControls from './components/CustomersControls';
 import CustomersTable from './components/CustomersTable';
+import { BASE_URL } from '../../config';
 
 const CustomersPage = () => {
      const [searchTerm, setSearchTerm] = useState('');
@@ -17,11 +18,18 @@ const CustomersPage = () => {
           hasAddress: false
      });
      const [error, setError] = useState(null);
+     const [notification, setNotification] = useState(null);
+
+     const showNotification = (msg) => {
+          setNotification(msg);
+          setTimeout(() => setNotification(null), 4000);
+     };
 
      const fetchCustomers = async () => {
           try {
                setLoading(true);
-               const response = await fetch('http://localhost:5000/api/customers');
+               const response = await fetch(`${BASE_URL}/api/customers`);
+
 
                if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
@@ -43,15 +51,17 @@ const CustomersPage = () => {
 
      const handleDeleteCustomer = async (id) => {
           try {
-               const response = await fetch(`http://localhost:5000/api/customers/${id}`, {
+               const response = await fetch(`${BASE_URL}/api/customers/${id}`, {
                     method: 'DELETE'
                });
+
 
                if (!response.ok) {
                     throw new Error('Failed to delete customer');
                }
 
                fetchCustomers();
+               showNotification('Customer deleted successfully');
           } catch (error) {
                console.error('Delete error:', error);
                setError(error.message);
@@ -97,6 +107,16 @@ const CustomersPage = () => {
                }
           });
 
+     // Pass showNotification to NewCustomerModal for add/edit
+     const handleModalSuccess = (action) => {
+          fetchCustomers();
+          showNotification(
+               action === 'edit'
+                    ? 'Customer updated successfully'
+                    : 'Customer added successfully'
+          );
+     };
+
      return (
           <div className="space-y-6">
                <CustomersHeader
@@ -115,6 +135,13 @@ const CustomersPage = () => {
                     onSort={handleSort}
                />
 
+               {/* Notification message */}
+               {notification && (
+                    <div className="bg-green-100 text-green-800 px-4 py-2 rounded mb-2 text-center font-medium transition-all duration-300">
+                         {notification}
+                    </div>
+               )}
+
                <CustomersTable
                     loading={loading}
                     customers={filteredCustomers}
@@ -131,7 +158,7 @@ const CustomersPage = () => {
                          setIsNewCustomerOpen(false);
                          setEditingCustomer(null);
                     }}
-                    onSuccess={fetchCustomers}
+                    onSuccess={() => handleModalSuccess(editingCustomer ? 'edit' : 'add')}
                     editingCustomer={editingCustomer}
                />
           </div>

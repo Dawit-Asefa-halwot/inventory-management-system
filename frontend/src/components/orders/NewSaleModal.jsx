@@ -5,6 +5,7 @@ import Input from '../ui/input';
 import { Package, Plus, Minus, X } from 'lucide-react';
 import OrderReceipt from './OrderReceipt';
 import { useRef } from 'react';
+import { getImageUrl } from '../../utils/imageUtils';
 
 // Removed TypeScript Product type
 
@@ -91,7 +92,7 @@ const NewSaleModal = ({ isOpen, onClose, onSuccess }) => {
 
      const calculateTotal = () => {
           return selectedProducts.reduce((sum, item) =>
-               sum + (item.product.price * item.quantity), 0
+               sum + ((item.product.selling_price || item.product.price) * item.quantity), 0
           );
      };
 
@@ -105,11 +106,10 @@ const NewSaleModal = ({ isOpen, onClose, onSuccess }) => {
 
                // Prepare items with correct structure
                const items = selectedProducts.map(item => ({
-                    product_id: item.product.id,  // Int ID
-                    quantity: item.quantity,
-                    price: item.product.price
+                    product_id: Number(item.product.id),  // Ensure number
+                    quantity: Number(item.quantity),      // Ensure number
+                    price: Number(item.product.selling_price || item.product.price)     // Use selling price
                }));
-
                const totalAmount = calculateTotal();
 
                const response = await fetch('http://localhost:5000/api/sales-orders', {
@@ -197,21 +197,24 @@ const NewSaleModal = ({ isOpen, onClose, onSuccess }) => {
                                                   onClick={() => handleAddProduct(product)}
                                              >
                                                   <div className="w-full h-32 bg-gray-100 rounded-md mb-2 overflow-hidden">
-                                                       {product.imageUrl ? (
+                                                       {product.image_url ? (
                                                             <img
-                                                                 src={product.imageUrl}
+                                                                 src={getImageUrl(product.image_url)}
                                                                  alt={product.name}
                                                                  className="w-full h-full object-cover"
+                                                                 onError={(e) => {
+                                                                      e.target.style.display = 'none';
+                                                                      e.target.nextSibling.style.display = 'flex';
+                                                                 }}
                                                             />
-                                                       ) : (
-                                                            <div className="w-full h-full flex items-center justify-center">
-                                                                 <Package size={32} className="text-gray-400" />
-                                                            </div>
-                                                       )}
+                                                       ) : null}
+                                                       <div className="w-full h-full flex items-center justify-center" style={{ display: product.image_url ? 'none' : 'flex' }}>
+                                                            <Package size={32} className="text-gray-400" />
+                                                       </div>
                                                   </div>
                                                   <h3 className="font-medium text-gray-900">{product.name}</h3>
                                                   <p className="text-sm text-gray-500">Stock: {product.quantity}</p>
-                                                  <p className="text-sm font-medium text-indigo-600">${product.price.toFixed(2)}</p>
+                                                  <p className="text-sm font-medium text-indigo-600"> ${Number(product.selling_price || product.price).toFixed(2)}</p>
                                              </div>
                                         ))}
                                    </div>
@@ -244,7 +247,7 @@ const NewSaleModal = ({ isOpen, onClose, onSuccess }) => {
                                              <div key={item.product.id} className="flex items-center justify-between border-b pb-2">
                                                   <div className="flex-1">
                                                        <h4 className="font-medium">{item.product.name}</h4>
-                                                       <p className="text-sm text-gray-500">${item.product.price.toFixed(2)} each</p>
+                                                       <p className="text-sm text-gray-500">${Number(item.product.selling_price || item.product.price).toFixed(2)} each</p>
                                                   </div>
                                                   <div className="flex items-center gap-2">
                                                        <Button

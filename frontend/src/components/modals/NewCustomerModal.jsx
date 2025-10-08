@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, Mail, Phone, MapPin } from 'lucide-react';
 import Button from '../ui/button';
 import Input from '../ui/input';
-// import { supabase } from '../../lib/supabase';
+import { BASE_URL } from '../../config';
 
-const NewCustomerModal = ({ isOpen, onClose, onSuccess }) => {
+const NewCustomerModal = ({ isOpen, onClose, onSuccess, editingCustomer }) => {
      const [loading, setLoading] = useState(false);
      const [error, setError] = useState(null);
      const [formData, setFormData] = useState({
@@ -14,23 +14,60 @@ const NewCustomerModal = ({ isOpen, onClose, onSuccess }) => {
           address: ''
      });
 
+     // Populate form when editing
+     useEffect(() => {
+          if (editingCustomer) {
+               setFormData({
+                    name: editingCustomer.name || '',
+                    email: editingCustomer.email || '',
+                    phone: editingCustomer.phone || '',
+                    address: editingCustomer.address || ''
+               });
+          } else {
+               setFormData({
+                    name: '',
+                    email: '',
+                    phone: '',
+                    address: ''
+               });
+          }
+     }, [editingCustomer]);
+
      const handleSubmit = async (e) => {
           e.preventDefault();
           setLoading(true);
           setError(null);
 
+          // Phone validation
+          if (formData.phone) {
+               const phoneRegex = /^\+251\d{8,}$/;
+               if (!phoneRegex.test(formData.phone)) {
+                    setError('Phone number must start with +251 and contain 8 or more digits after.');
+                    setLoading(false);
+                    return;
+               }
+          }
+
+
           try {
-               const response = await fetch('http://localhost:5000/api/customers', {
-                    method: 'POST',
+               const method = editingCustomer ? 'PUT' : 'POST';
+               const url = editingCustomer
+                    ? `${BASE_URL}/api/customers/${editingCustomer.id}`
+                    : `${BASE_URL}/api/customers`;
+
+
+               const response = await fetch(url, {
+                    method,
                     headers: {
                          'Content-Type': 'application/json',
                     },
                     body: JSON.stringify(formData),
                });
 
+               const data = await response.json();
+
                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Failed to create customer');
+                    throw new Error(data.error || 'Failed to save customer');
                }
 
                onSuccess();
@@ -45,10 +82,12 @@ const NewCustomerModal = ({ isOpen, onClose, onSuccess }) => {
      if (!isOpen) return null;
 
      return (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-               <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+               <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
                     <div className="p-6 border-b border-gray-200">
-                         <h2 className="text-xl font-semibold">Add New Customer</h2>
+                         <h2 className="text-xl font-semibold">
+                              {editingCustomer ? 'Edit Customer' : 'Add New Customer'}
+                         </h2>
                     </div>
 
                     <form onSubmit={handleSubmit} className="p-6 space-y-4">
@@ -77,6 +116,24 @@ const NewCustomerModal = ({ isOpen, onClose, onSuccess }) => {
                               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                          />
 
+                         <div className="flex items-center gap-2">
+                              <span className="px-2 py-1 bg-gray-100 rounded text-gray-700 select-none">+251</span>
+                              <input
+                                   type="tel"
+                                   className="flex-1 border rounded px-3 py-2"
+                                   value={formData.phone.replace(/^\+251/, '')}
+                                   maxLength={9}
+                                   pattern="\d{9}"
+                                   onChange={(e) => {
+                                        // Only allow numbers, max 9 digits
+                                        const digits = e.target.value.replace(/\D/g, '').slice(0, 9);
+                                        setFormData({ ...formData, phone: '+251' + digits });
+                                   }}
+                                   placeholder="9XXXXXXXX"
+                                   required={false}
+                              />
+                         </div>
+
                          <Input
                               label="Address"
                               icon={<MapPin size={18} />}
@@ -94,12 +151,8 @@ const NewCustomerModal = ({ isOpen, onClose, onSuccess }) => {
                               <Button variant="outline" onClick={onClose}>
                                    Cancel
                               </Button>
-                              <Button
-                                   variant="primary"
-                                   type="submit"
-                                   isLoading={loading}
-                              >
-                                   Create Customer
+                              <Button variant="primary" type="submit" isLoading={loading}>
+                                   {editingCustomer ? 'Update Customer' : 'Create Customer'}
                               </Button>
                          </div>
                     </form>

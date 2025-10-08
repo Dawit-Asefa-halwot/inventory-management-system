@@ -24,8 +24,14 @@ const ProductsTable = ({
      onDelete,
      onPageChange
 }) => {
-     const getSellingPrice = (purchasePrice) => {
-          return purchasePrice * 1.5;
+     // components/ProductsTable.jsx - Update the getSellingPrice function
+     const getSellingPrice = (product) => {
+          // Use selling_price if available, otherwise calculate 10% higher than purchase price
+          if (product.selling_price) {
+               return parseFloat(product.selling_price);
+          }
+          const purchasePrice = parseFloat(product.purchase_price || product.price);
+          return purchasePrice * 1.1;
      };
 
      const getStatusBadge = (quantity) => {

@@ -10,7 +10,7 @@ import {
 import UserRow from './UserRow';
 import { UserCircle } from 'lucide-react';
 
-const UsersTable = ({ loading, users, onEdit, onDelete }) => {
+const UsersTable = ({ loading, users, onEdit, onDelete, onStatusChange }) => {
      const renderTableHeader = () => (
           <TableHeader>
                <TableRow>
@@ -73,6 +73,7 @@ const UsersTable = ({ loading, users, onEdit, onDelete }) => {
                                    user={user}
                                    onEdit={onEdit}
                                    onDelete={onDelete}
+                                   onStatusChange={onStatusChange}
                               />
                          ))}
                     </TableBody>

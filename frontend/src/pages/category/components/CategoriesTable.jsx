@@ -62,6 +62,7 @@ const CategoriesTable = ({ loading, categories, onEdit, onDelete }) => {
      }
 
      return (
+
           <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
                <Table>
                     {renderTableHeader()}

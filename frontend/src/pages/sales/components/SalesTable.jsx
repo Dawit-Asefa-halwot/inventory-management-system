@@ -46,7 +46,7 @@ const SalesTable = ({
                                         <TableCell>{formatDate(sale.created_at)}</TableCell>
                                         <TableCell>Customer #{sale.customer_id}</TableCell>
                                         <TableCell className="font-medium">
-                                             ${sale.total_amount.toFixed(2)}
+                                             ${Number(sale.total_amount).toFixed(2)}
                                         </TableCell>
                                         <TableCell>
                                              <StatusBadge status={sale.status} />

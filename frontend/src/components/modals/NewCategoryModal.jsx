@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tag } from 'lucide-react';
 import Button from '../ui/button';
 import Input from '../ui/input';
-// import { supabase } from '../../lib/supabase';
+import { BASE_URL } from '../../config';
 
-const NewCategoryModal = ({ isOpen, onClose, onSuccess }) => {
+const NewCategoryModal = ({ isOpen, onClose, onSuccess, editingCategory }) => {
      const [formData, setFormData] = useState({
           name: '',
           description: ''
@@ -12,6 +12,18 @@ const NewCategoryModal = ({ isOpen, onClose, onSuccess }) => {
 
      const [loading, setLoading] = useState(false);
      const [error, setError] = useState(null);
+
+     // Prefill form when editingCategory changes
+     useEffect(() => {
+          if (editingCategory) {
+               setFormData({
+                    name: editingCategory.name || '',
+                    description: editingCategory.description || ''
+               });
+          } else {
+               setFormData({ name: '', description: '' });
+          }
+     }, [editingCategory, isOpen]); // also reset when modal opens
 
      const handleChange = (e) => {
           const { name, value } = e.target;
@@ -24,17 +36,32 @@ const NewCategoryModal = ({ isOpen, onClose, onSuccess }) => {
           setError(null);
 
           try {
-               const response = await fetch('http://localhost:5000/api/categories', {
-                    method: 'POST',
-                    headers: {
-                         'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(formData),
-               });
+               const apiUrl = `${BASE_URL}/api/categories`;
+
+
+               let response;
+
+               if (editingCategory) {
+                    response = await fetch(`${apiUrl}/${editingCategory.id}`, {
+                         method: 'PUT',
+                         headers: {
+                              'Content-Type': 'application/json',
+                         },
+                         body: JSON.stringify(formData),
+                    });
+               } else {
+                    response = await fetch(apiUrl, {
+                         method: 'POST',
+                         headers: {
+                              'Content-Type': 'application/json',
+                         },
+                         body: JSON.stringify(formData),
+                    });
+               }
 
                if (!response.ok) {
                     const errorData = await response.json();
-                    throw new Error(errorData.error || 'Failed to create category');
+                    throw new Error(errorData.error || 'Failed to save category');
                }
 
                onSuccess();
@@ -45,13 +72,17 @@ const NewCategoryModal = ({ isOpen, onClose, onSuccess }) => {
                setLoading(false);
           }
      };
+
+
      if (!isOpen) return null;
 
      return (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
                <div className="bg-white rounded-xl shadow-lg w-full max-w-md">
                     <div className="p-6 border-b border-gray-200">
-                         <h2 className="text-xl font-semibold text-gray-900">Add New Category</h2>
+                         <h2 className="text-xl font-semibold text-gray-900">
+                              {editingCategory ? 'Edit Category' : 'Add New Category'}
+                         </h2>
                     </div>
 
                     <form onSubmit={handleSubmit} className="p-6 space-y-5">
@@ -100,7 +131,7 @@ const NewCategoryModal = ({ isOpen, onClose, onSuccess }) => {
                                    variant="primary"
                                    isLoading={loading}
                               >
-                                   Create Category
+                                   {editingCategory ? 'Update Category' : 'Create Category'}
                               </Button>
                          </div>
                     </form>

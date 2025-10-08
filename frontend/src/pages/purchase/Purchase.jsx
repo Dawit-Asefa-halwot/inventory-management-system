@@ -7,7 +7,9 @@ import QRDisplayModal from '../../components/orders/QRDisplayModal';
 import PurchaseDetailModal from '../../components/orders/PurchaseDetailModal';
 import SearchFilterBar from './components/SearchFilterBar';
 import PurchasesTable from './components/PurchaseTable';
+import BulkPurchaseModal from '../../components/orders/BulkPurchaseModal';
 const PurchasesPage = () => {
+
      const [isDetailOpen, setIsDetailOpen] = useState(false);
      const [selectedPurchase, setSelectedPurchase] = useState(null);
      const [searchTerm, setSearchTerm] = useState('');
@@ -17,8 +19,9 @@ const PurchasesPage = () => {
      const [isQRDisplayOpen, setIsQRDisplayOpen] = useState(false);
      const [selectedPurchaseId, setSelectedPurchaseId] = useState(null);
      const [loading, setLoading] = useState(true);
+     const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
 
-     const [sortField, setSortField] = useState('name');
+     const [sortField, setSortField] = useState('created_at');
      const [sortOrder, setSortOrder] = useState('asc');
      const [showFilterMenu, setShowFilterMenu] = useState(false);
      const [showSortMenu, setShowSortMenu] = useState(false);
@@ -83,6 +86,19 @@ const PurchasesPage = () => {
                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <h1 className="text-2xl font-bold text-gray-900">Purchases</h1>
                     <div className="flex gap-2">
+                         <BulkPurchaseModal
+                              isOpen={isBulkModalOpen}
+                              onClose={() => setIsBulkModalOpen(false)}
+                              onSuccess={fetchPurchases}
+                         />
+                         <Button
+                              variant="outline"
+                              size="md"
+                              icon={<ShoppingCart size={16} />}
+                              onClick={() => setIsBulkModalOpen(true)}
+                         >
+                              Bulk Purchase
+                         </Button>
                          <Button
                               variant="primary"
                               size="md"

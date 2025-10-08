@@ -1,30 +1,37 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell, User, Settings, X, Sun, Moon } from 'lucide-react';
-// import { signOut } from '../../lib/auth';
-// import { useAuth } from '../auth/AuthProvider';
+import { useAuth } from '../../auth/AuthContext';
 import { useTheme } from '../ThemeProvider';
 import io from 'socket.io-client';
 
-const Header = ({ userName, userAvatar }) => {
+const Header = () => {
+     const { user, logout } = useAuth();
      const [isProfileOpen, setIsProfileOpen] = useState(false);
      const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
      const [notifications, setNotifications] = useState([]);
      const [unreadCount, setUnreadCount] = useState(0);
      const navigate = useNavigate();
-     // const { user } = useAuth();
      const { theme, toggleTheme } = useTheme();
      const [socket, setSocket] = useState(null);
 
      useEffect(() => {
-          // Initialize WebSocket connection
           const newSocket = io('http://localhost:5000');
           setSocket(newSocket);
 
-          // Fetch initial notifications
+          const fetchNotifications = async () => {
+               try {
+                    const response = await fetch('http://localhost:5000/api/notifications');
+                    const data = await response.json();
+                    setNotifications(data);
+                    setUnreadCount(data.filter(n => !n.read).length);
+               } catch (error) {
+                    console.error('Error fetching notifications:', error);
+               }
+          };
+
           fetchNotifications();
 
-          // Listen for new notifications
           newSocket.on('new-notification', (notification) => {
                setNotifications(prev => [notification, ...prev]);
                setUnreadCount(prev => prev + 1);
@@ -34,17 +41,6 @@ const Header = ({ userName, userAvatar }) => {
                newSocket.disconnect();
           };
      }, []);
-
-     const fetchNotifications = async () => {
-          try {
-               const response = await fetch('http://localhost:5000/api/notifications');
-               const data = await response.json();
-               setNotifications(data);
-               setUnreadCount(data.filter(n => !n.read).length);
-          } catch (error) {
-               console.error('Error fetching notifications:', error);
-          }
-     };
 
      const markAsRead = async (id) => {
           try {
@@ -84,8 +80,7 @@ const Header = ({ userName, userAvatar }) => {
 
      const handleSignOut = async () => {
           try {
-               await signOut();
-               navigate('/login');
+               logout();
           } catch (error) {
                console.error('Error signing out:', error);
           }
@@ -128,18 +123,9 @@ const Header = ({ userName, userAvatar }) => {
      return (
           <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 h-16">
                <div className="h-full px-4 flex items-center justify-between">
-
-
                     {/* Search Bar */}
                     <div className="relative max-w-xs w-full hidden sm:block">
-                         {/* <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                              <Search size={18} className="text-gray-400 dark:text-gray-500" />
-                         </div> */}
-                         {/* <input
-                              type="text"
-                              placeholder="Search..."
-                              className="w-full h-9 pl-10 pr-4 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400"
-                         /> */}
+                         {/* Search input placeholder */}
                     </div>
 
                     {/* Right Side Actions */}
@@ -225,46 +211,32 @@ const Header = ({ userName, userAvatar }) => {
                                    onClick={toggleProfile}
                               >
                                    <div className="h-8 w-8 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center text-indigo-700 dark:text-indigo-300 font-medium overflow-hidden">
-                                        {userAvatar ? (
+                                        {user?.profilePicture ? (
                                              <img
-                                                  src={userAvatar}
-                                                  alt={userName}
+                                                  src={
+                                                       user?.profilePicture?.startsWith('http')
+                                                            ? user.profilePicture
+                                                            : `http://localhost:5000${user.profilePicture}`
+                                                  }
+                                                  alt={user.name || user.email}
                                                   className="h-full w-full object-cover"
+                                                  onError={(e) => {
+                                                       console.error('Failed to load profile image in header:', e.target.src);
+                                                       e.target.src = 'http://localhost:5000/profile-pictures/fallback-profile.png';
+                                                  }}
                                              />
+                                        ) : user?.name ? (
+                                             <span className="text-sm">
+                                                  {user.name.split(' ').map(n => n[0]).join('')}
+                                             </span>
                                         ) : (
                                              <User size={16} />
                                         )}
                                    </div>
                                    <span className="text-sm font-medium text-gray-700 dark:text-gray-200 hidden md:block">
-                                        {userName}
+                                        {user?.name || user?.email}
                                    </span>
                               </button>
-
-                              {isProfileOpen && (
-                                   <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-10 border border-gray-200 dark:border-gray-700">
-                                        <a
-                                             href="/profile"
-                                             className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
-                                        >
-                                             <User size={16} />
-                                             Your Profile
-                                        </a>
-                                        <a
-                                             href="/settings"
-                                             className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
-                                        >
-                                             <Settings size={16} />
-                                             Settings
-                                        </a>
-                                        <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
-                                        <button
-                                             onClick={handleSignOut}
-                                             className="block w-full text-left px-4 py-2 text-sm text-red-700 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-                                        >
-                                             Sign out
-                                        </button>
-                                   </div>
-                              )}
                          </div>
                     </div>
                </div>

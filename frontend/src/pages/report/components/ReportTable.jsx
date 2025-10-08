@@ -18,7 +18,11 @@ const ReportTable = ({ currentReport, onDownload }) => {
      const renderTableCell = (reportType, item, column) => {
           switch (column) {
                case 'Date':
-                    return new Date(item.created_at).toLocaleDateString();
+                    return item.date
+                         ? new Date(item.date).toLocaleDateString()
+                         : item.created_at
+                              ? new Date(item.created_at).toLocaleDateString()
+                              : '';
                case 'Amount':
                case 'Price':
                case 'Total Revenue':

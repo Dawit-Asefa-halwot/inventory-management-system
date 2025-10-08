@@ -4,6 +4,7 @@ import CategoriesHeader from "./components/CategoriesHeader.jsx";
 
 import CategoriesControls from './components/CategoriesControls';
 import CategoriesTable from './components/CategoriesTable';
+import { BASE_URL } from '../../config';
 
 const CategoriesPage = () => {
      const [searchTerm, setSearchTerm] = useState('');
@@ -19,7 +20,8 @@ const CategoriesPage = () => {
      const fetchCategories = async () => {
           try {
                setLoading(true);
-               const response = await fetch('http://localhost:5000/api/categories');
+               const response = await fetch(`${BASE_URL}/api/categories`);
+
                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                const data = await response.json();
                setCategories(data);
@@ -38,16 +40,20 @@ const CategoriesPage = () => {
 
      const handleDeleteCategory = async (id) => {
           try {
-               const response = await fetch(`http://localhost:5000/api/categories/${id}`, {
-                    method: 'DELETE'
-               });
-               if (!response.ok) throw new Error('Failed to delete category');
+               const response = await fetch(`${BASE_URL}/api/categories/${id}`, { method: 'DELETE' });
+
+               if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to delete category');
+               }
                fetchCategories();
           } catch (error) {
                console.error('Delete error:', error);
                setError(error.message);
+               alert(error.message); // optional: replace with toast or UI error
           }
      };
+
 
      const handleSort = (field) => {
           if (sortField === field) {
